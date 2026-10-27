@@ -1,6 +1,5 @@
 extends Node
-## Scene transition singleton: pixel-dissolve reveal between scenes.
-## Usage: Transition.fade_to("res://scenes/world.tscn")
+# scene switch with a pixel dissolve. call Transition.fade_to(path)
 
 const SHADER := preload("res://scripts/dissolve.gdshader")
 

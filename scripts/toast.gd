@@ -1,5 +1,5 @@
 class_name Toast
-## Small top-center notification that slides in and back out.
+# little notification that slides in and back out at the top
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 

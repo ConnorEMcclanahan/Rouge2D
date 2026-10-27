@@ -1,9 +1,7 @@
 class_name UiTheme
-## Shared UI kit: pixel icons, styled panels, buttons, labels, keycaps and
-## backgrounds. Everything is built in code so no theme resource file is needed.
-## Screens (menu, HUD, upgrade panel, game over) compose these helpers together.
+# ui helpers: icons, panels, buttons, hearts, sliders. everything is drawn in
+# code so there's no theme file to fiddle with. screens just compose these.
 
-# --- Palette -----------------------------------------------------------------
 const C_BG_TOP := Color("1c2a1a")
 const C_BG_BOTTOM := Color("050a06")
 const C_PANEL_BG := Color("151d12")
@@ -27,7 +25,6 @@ const C_SLATE_BG := Color("1b1814")
 const C_SLATE_BORDER := Color("73582e")
 const C_SLATE_RIM := Color("3a2d1a")
 
-# --- Icon pixel patterns (strings are 11 chars wide) -------------------------
 const ICONS := {
 	"heart": [
 		"01111011110",
@@ -140,7 +137,7 @@ const ICONS := {
 	],
 }
 
-# Icon id -> [base, highlight, shade, outline, specular]
+# tints per icon: base, highlight, shade, outline, specular
 const ICON_TINTS := {
 	"heart": [Color("e03344"), Color("ff8a93"), Color("8c0f1b"), Color("4a060d"), Color("ffeef0")],
 	"sword": [Color("cfd6de"), Color("ffffff"), Color("7c858f"), Color("3d434a"), Color("ffffff")],
@@ -166,9 +163,8 @@ const HEART_PATTERN := [
 	"00000100000",
 ]
 
-# --- Pixel image helpers -----------------------------------------------------
 
-## Builds a tinted, outlined pixel icon texture from a 1/0 pattern.
+# draw a 1/0 pattern, tint it, outline it
 static func make_icon_texture(id: String) -> ImageTexture:
 	var pattern: Array = ICONS[id]
 	var tint: Array = ICON_TINTS[id]
@@ -194,7 +190,7 @@ static func make_icon_texture(id: String) -> ImageTexture:
 				image.set_pixel(x, y, tint[3])
 	return ImageTexture.create_from_image(image)
 
-## A TextureRect already set up to show a pixel icon, scaled by `size`.
+# ready-to-use icon rect
 static func make_icon(id: String, size: float = 22.0) -> TextureRect:
 	var rect := TextureRect.new()
 	rect.texture = make_icon_texture(id)
@@ -204,7 +200,7 @@ static func make_icon(id: String, size: float = 22.0) -> TextureRect:
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
 
-## Maps an upgrade id to an icon id (used by the upgrade panel).
+# which icon goes with which upgrade
 static func upgrade_icon(id: String) -> String:
 	match id:
 		"hearty": return "heart"
@@ -268,7 +264,6 @@ static func make_empty_heart_icon(size := Vector2(22, 18)) -> TextureRect:
 	heart.stretch_mode = TextureRect.STRETCH_SCALE
 	return heart
 
-# --- Backgrounds -------------------------------------------------------------
 
 static func make_gradient_background(top: Color, bottom: Color) -> TextureRect:
 	var rect := TextureRect.new()
@@ -282,7 +277,7 @@ static func make_gradient_background(top: Color, bottom: Color) -> TextureRect:
 	rect.stretch_mode = TextureRect.STRETCH_SCALE
 	return rect
 
-## Dark, rounded vignette overlay for a moodier frame.
+# darkens the edges of a screen
 static func make_vignette(strength: float = 0.45) -> TextureRect:
 	var rect := TextureRect.new()
 	var gradient := Gradient.new()
@@ -301,7 +296,6 @@ static func make_vignette(strength: float = 0.45) -> TextureRect:
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
 
-# --- Text --------------------------------------------------------------------
 
 static func make_label(text: String, font_size: int, color: Color = C_TEXT, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_CENTER) -> Label:
 	var label := Label.new()
@@ -316,9 +310,8 @@ static func make_label(text: String, font_size: int, color: Color = C_TEXT, alig
 	label.add_theme_constant_override("shadow_offset_y", 3)
 	return label
 
-# --- Panels ------------------------------------------------------------------
 
-## Flat panel style with border, rounded corners and a soft drop shadow.
+# the standard panel look (border + rounded corners + drop shadow)
 static func make_panel_style(bg: Color = C_SLATE_BG, border: Color = C_SLATE_BORDER, radius: int = 6) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
@@ -334,15 +327,14 @@ static func make_panel_style(bg: Color = C_SLATE_BG, border: Color = C_SLATE_BOR
 	sb.content_margin_bottom = 14.0
 	return sb
 
-## Thin decorative divider line.
+# thin divider line
 static func make_divider(color: Color = C_PANEL_BORDER, height: float = 2.0) -> ColorRect:
 	var rect := ColorRect.new()
 	rect.color = color
 	rect.custom_minimum_size = Vector2(0, height)
 	return rect
 
-## Wraps `child` in a framed dialog: dark rim + slate panel + stitched leather
-## border. The stitch dashes read as hand-sewn leather around the card.
+# framed dialog: dark rim + slate panel + stitched border
 static func make_frame(child: Control, bg: Color = C_SLATE_BG, border: Color = C_SLATE_BORDER) -> PanelContainer:
 	var outer := PanelContainer.new()
 	var rim := StyleBoxFlat.new()
@@ -370,7 +362,7 @@ static func make_frame(child: Control, bg: Color = C_SLATE_BG, border: Color = C
 	outer.add_child(inner)
 	return outer
 
-## Stitch-dash border stylebox (transparent center, dashed thread edges).
+# stitch dashes around the panel edge (transparent middle)
 static func make_stitch_style(stitch_color: Color = Color("c8a65c")) -> StyleBoxTexture:
 	var img := Image.create(24, 24, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
@@ -390,7 +382,7 @@ static func make_stitch_style(stitch_color: Color = Color("c8a65c")) -> StyleBox
 	sb.texture_margin_bottom = 5.0
 	return sb
 
-## Soft radial light — used for breathing glows behind menu cards.
+# soft glow blob, sits behind the menu card
 static func make_radial_light(inner: Color, size := Vector2(420, 320)) -> TextureRect:
 	var rect := TextureRect.new()
 	var gradient := Gradient.new()
@@ -410,8 +402,7 @@ static func make_radial_light(inner: Color, size := Vector2(420, 320)) -> Textur
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
 
-## Divider with a small diamond stud in the middle — line · diamond · line.
-## Callers can pulse the diamond (child index 1) for a shimmer effect.
+# line · diamond · line divider. pulse the diamond (child 1) for shimmer
 static func make_shimmer_divider(color: Color = C_PANEL_BORDER_LIGHT, height: float = 2.0) -> HBoxContainer:
 	var box := HBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -432,7 +423,7 @@ static func make_shimmer_divider(color: Color = C_PANEL_BORDER_LIGHT, height: fl
 	box.add_child(line_r)
 	return box
 
-## Small gold knob texture for slider grabbers.
+# little gold knob for sliders
 static func make_knob_texture(bright: bool = false) -> ImageTexture:
 	var img := Image.create(10, 10, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
@@ -443,7 +434,7 @@ static func make_knob_texture(bright: bool = false) -> ImageTexture:
 				img.set_pixel(x, y, Color("f0d488") if bright else Color("d9b964") if d < 3.0 else Color("8f7438"))
 	return ImageTexture.create_from_image(img)
 
-## Themed HSlider with the stone track + gold knob look.
+# slider with our stone-track look
 static func make_slider(min_value: float, max_value: float, value: float) -> HSlider:
 	var slider := HSlider.new()
 	slider.min_value = min_value
@@ -470,7 +461,6 @@ static func make_slider(min_value: float, max_value: float, value: float) -> HSl
 	slider.add_theme_icon_override("grabber_disabled", make_knob_texture(false))
 	return slider
 
-# --- Buttons -----------------------------------------------------------------
 
 const BUTTON_PALETTES := {
 	"green": {
@@ -491,8 +481,7 @@ const BUTTON_PALETTES := {
 	},
 }
 
-## Styled button with hover grow animation and a gold focus ring.
-## `chevron` adds a "»" that slides in on hover/focus.
+# button with hover pop, gold focus ring, and a "»" chevron if asked
 static func make_button(text: String, kind: String = "green", min_size := Vector2(150, 38), font_size := 15, chevron: bool = false) -> Button:
 	var pal: Dictionary = BUTTON_PALETTES.get(kind, BUTTON_PALETTES["green"])
 	var button := Button.new()
@@ -563,7 +552,7 @@ static func _shrink(button: Button) -> void:
 	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(button, "scale", Vector2.ONE, 0.14)
 
-## Press-down squash before the action fires.
+# squash on click
 static func _squash(button: Button) -> void:
 	_ui_sound_stub("press")
 	var tween := button.create_tween()
@@ -576,13 +565,12 @@ static func _unsquash(button: Button) -> void:
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(button, "scale", target, 0.12)
 
-## Placeholder for UI sound effects — wire an AudioStreamPlayer here later.
+# no sounds yet — swap in an AudioStreamPlayer here later
 static func _ui_sound_stub(kind: String) -> void:
 	pass
 
-# --- Misc widgets ------------------------------------------------------------
 
-## A keycap-style prompt (dark chip with gold border) wrapping a label.
+# keycap chip, like the SPACE prompt over the chest
 static func make_keycap(text: String, font_size: int = 11) -> PanelContainer:
 	var panel := PanelContainer.new()
 	var sb := StyleBoxFlat.new()

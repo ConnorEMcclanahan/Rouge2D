@@ -1,22 +1,11 @@
 # Rouge
 
-A tiny 2D woods roguelike built with **Godot 4.7**.
+A tiny 2D woods roguelike I'm making in **Godot 4.7**.
 
 Slash slimes and a skeleton miniboss, open the chest to pick from a set of
-roguelike upgrades, and see how long you can survive the woods.
+upgrades, and see how long you last.
 
-## Screenshots & Animations
-
-| Menu — bobbing title, fireflies, drifting mist | Upgrade cards — staggered entrance, hover slide + sweep |
-|:---:|:---:|
-| ![Menu](docs/gifs/menu.gif) | ![Upgrades](docs/gifs/upgrade.gif) |
-
-| Combat — damage numbers, boss bar, HUD stats | Game over — crimson wash, elastic pop |
-|:---:|:---:|
-| ![Combat](docs/gifs/world.gif) | ![Game over](docs/gifs/gameover.gif) |
-
-<details>
-<summary>Static screenshots</summary>
+## Screenshots
 
 | Title screen | Gameplay |
 |:---:|:---:|
@@ -26,28 +15,24 @@ roguelike upgrades, and see how long you can survive the woods.
 |:---:|:---:|
 | ![Upgrade choice](docs/screenshots/upgrade.png) | ![Game over](docs/screenshots/gameover.png) |
 
-</details>
-
 ## Controls
 
 | Input | Action |
 |-------|--------|
 | WASD / Arrow keys | Move |
-| SPACE / Enter | Attack · interact (open the chest) |
+| SPACE / Enter | Attack / interact (open the chest) |
+| ESC | Pause |
 
-## Features
+## What's in it
 
-- Zelda-style heart HUD, and a miniboss that shows its own hearts
-- Chest shrine with 6 upgrades: Hearty, Swift, Sharp, Quick, Heavy, Sturdy
+- Heart-based health (zelda style), the miniboss shows his own hearts
+- Chest with 6 upgrades: Hearty, Swift, Sharp, Quick, Heavy, Sturdy
 - Y-sorted trees, cliffs you can hop down, knockback combat with i-frames
-- Retro-arcade UI juice: breathing menu with drifting fireflies, squash-and-stretch
-  buttons, staggered upgrade cards with hover glow + highlight sweep, hearts that
-  shake and flash on damage (pulse on heal), and an elastic "You Died" cinematic
-- Portfolio-grade UI systems: floating combat numbers, boss nameplate with
-  segmented health bar, run timer + kill tracker, pause menu with volume sliders
-  and fullscreen toggle, upgrade toasts, and a pixel-dissolve scene transition
-  shader (`scripts/dissolve.gdshader`)
-- Pixel-art UI built entirely in code (`scripts/ui_theme.gd`)
+- Floating damage numbers, boss nameplate with a segmented hp bar
+- Run timer + kill counter in the HUD
+- Pause menu with volume sliders and a fullscreen toggle
+- Scene transitions with a pixel-dissolve shader (`scripts/dissolve.gdshader`)
+- All UI is drawn in code (`scripts/ui_theme.gd`), no theme files
 
 ## Running
 
@@ -60,7 +45,7 @@ godot --path .
 ## Project layout
 
 - `scenes/` — menu, world, player, enemies, bones miniboss
-- `scripts/` — gameplay and all UI code
+- `scripts/` — gameplay and UI
 - `art/` — sprite assets
 
 ## Credits

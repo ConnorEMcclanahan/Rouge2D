@@ -187,7 +187,7 @@ func _on_detection_area_body_entered(body: Node2D) -> void:
 	player_chase = true
 	_engage_nameplate()
 
-## Boss nameplate: typewriter name + segmented health bar, pops in on engage.
+# nameplate + segmented hp bar, pops in when he aggros
 func _engage_nameplate() -> void:
 	if engaged:
 		return

@@ -1,6 +1,5 @@
 extends CanvasLayer
-## Hearts HUD in a stone/leather plate. Hearts shake and flash on damage,
-## pulse when healing.
+# hearts hud in a little leather plate. shakes + flashes on hit, pops on heal
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 
@@ -89,7 +88,7 @@ func set_health(current: int) -> void:
 	elif current > 1 and is_low_pulsing:
 		_stop_low_pulse()
 
-## Top-right run tracker: elapsed time + kill count.
+# timer + kill counter, top right
 func _build_stats() -> void:
 	stats_plate = PanelContainer.new()
 	stats_plate.name = "StatsPlate"
@@ -136,7 +135,7 @@ func _process(delta: float) -> void:
 	time_label.text = "%d:%02d" % [total / 60, total % 60]
 	kills_label.text = str(GameState.kills)
 
-## Low-health warning: hearts pulse red until healed above 1.
+# at 1 hp the hearts pulse red until you heal
 func _start_low_pulse() -> void:
 	is_low_pulsing = true
 	var container := get_node("Plate/Hearts") as Control
@@ -151,7 +150,7 @@ func _stop_low_pulse() -> void:
 		low_pulse_tween.kill()
 	get_node("Plate/Hearts").modulate = Color.WHITE
 
-## Damage feedback: hearts flash red while the plate shakes horizontally.
+# hit feedback: red flash + shake
 func shake() -> void:
 	var base := plate.position
 	for heart in hearts:
@@ -165,7 +164,7 @@ func shake() -> void:
 		var restore := heart.create_tween()
 		restore.tween_property(heart, "modulate", Color.WHITE, 0.35)
 
-## Heal feedback: scale bounce 1.3 -> 1.0.
+# heal pop: 1.3 -> 1.0
 func _pop_heart(index: int) -> void:
 	if index < 0 or index >= hearts.size():
 		return

@@ -1,5 +1,5 @@
 extends CanvasLayer
-## Pause menu with working settings: volume sliders + fullscreen toggle.
+# pause menu: resume/restart/quit + volume sliders + fullscreen toggle
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 

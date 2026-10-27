@@ -1,5 +1,5 @@
 class_name CombatText
-## Floating combat numbers that pop off damaged characters.
+# floating damage numbers
 
 static func spawn(parent: Node, pos: Vector2, text: String, color: Color = Color("ffd98a"), size := 13) -> Label:
 	var label := Label.new()

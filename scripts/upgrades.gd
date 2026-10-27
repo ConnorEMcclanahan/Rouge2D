@@ -1,6 +1,6 @@
 extends RefCounted
 class_name Upgrades
-## Roguelike upgrade pool. Static so it can be used from anywhere via preload.
+# upgrade pool. static so anything can grab it via preload
 
 const UPGRADE_DEFS := {
 	"hearty": {"name": "Hearty", "desc": "+1 Max Heart & Full Heal"},

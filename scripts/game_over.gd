@@ -1,5 +1,5 @@
 extends CanvasLayer
-## Game-over overlay: crimson/black cinematic wash, then an elastic dialog pop.
+# you died screen — crimson wash, then the dialog pops in
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 
@@ -14,7 +14,7 @@ func _ready() -> void:
 	bg = UiTheme.make_gradient_background(Color("200807"), Color("070202"))
 	add_child(bg)
 
-	# Deep crimson/black fade washing over the whole viewport
+	# crimson wash over the whole screen
 	flash = ColorRect.new()
 	flash.color = Color(0.16, 0.02, 0.03, 0.0)
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE

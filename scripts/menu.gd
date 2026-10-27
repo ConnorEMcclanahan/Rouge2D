@@ -1,6 +1,6 @@
 extends Control
-## Start screen for "Rouge".
-## Laid out manually against the viewport (anchors are unreliable for scene roots).
+# main menu. laid out manually against the viewport (anchors are flaky as
+# scene roots, don't trust em)
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 
@@ -103,8 +103,7 @@ func _ready() -> void:
 
 	play_btn.grab_focus()
 
-	# Animations: bobbing title letters, mascot hop, breathing light, drifting
-	# mists, pulsing diamond, and a fade-in for the card
+	# Animations: bobbing title, mascot hop, breathing light, mist drift
 	for i in title_chars.size():
 		var t := create_tween().set_loops()
 		t.tween_interval(i * 0.18)
@@ -154,7 +153,7 @@ func _layout() -> void:
 		tb.tween_property(mist_b, "position:x", mist_b.position.x - 110.0, 15.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tb.tween_property(mist_b, "position:x", mist_b.position.x, 15.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
-## Fireflies: glowing dots drifting upward with a side-to-side sway.
+# fireflies drifting up with a little sway
 func _add_fireflies() -> void:
 	for i in 14:
 		var fly := ColorRect.new()

@@ -1,7 +1,6 @@
 extends Area2D
-## The world shrine chest: walk up to it and press the attack button (space) to
-## interact and pick an upgrade. The visual (AnimatedSprite2D + collision shape)
-## lives in world.tscn; everything below also builds itself if nodes are missing.
+# chest shrine. space to open, gives an upgrade. builds its own sprite and
+# collision if the scene doesn't have them
 
 const CHEST_TEXTURE = preload("res://art/mystic_woods_free_2.2/sprites/objects/chest_01.png")
 

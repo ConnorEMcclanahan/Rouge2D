@@ -1,5 +1,5 @@
 extends Node2D
-## World scene glue: soft fade-in when the run starts.
+# fade in at run start
 
 func _ready() -> void:
 	_fade_in()

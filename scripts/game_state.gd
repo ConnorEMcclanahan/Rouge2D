@@ -1,10 +1,10 @@
 extends Node
-## Global game state — an autoload singleton accessible everywhere as `GameState`.
+# global run state (autoload, access it as GameState anywhere)
 
 var chest_opened: bool = false
 var bones_defeated: bool = false
 
-# Roguelike run stats — persist for the run, reset on Try Again / new game
+# run stats, reset on retry / new game
 var max_health: int = 3
 var speed_mult: float = 1.0
 var attack_damage: int = 1
@@ -19,7 +19,7 @@ var run_elapsed: float = 0.0
 var sfx_volume: float = 80.0
 var music_volume: float = 60.0
 
-# Consumed by the player's refresh_from_gamestate() after picking "hearty"
+# set when you pick hearty, the player's refresh_from_gamestate uses it
 var pending_heal: bool = false
 
 func reset_run() -> void:

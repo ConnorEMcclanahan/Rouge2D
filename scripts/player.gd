@@ -315,7 +315,7 @@ func _hit_slime(body: Node2D) -> void:
 	if body.has_method("take_damage"):
 		body.take_damage(GameState.attack_damage, knock_dir)
 
-# ---- Roguelike upgrade / interact plumbing ---------------------------------
+# ---- upgrade / interact stuff -----------------------------------------------
 
 func set_nearby_interactable(node: Node) -> void:
 	nearby_interactable = node

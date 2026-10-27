@@ -1,6 +1,5 @@
 extends CanvasLayer
-## Roguelike upgrade choice panel. Pauses the game while open.
-## Option cards stagger in, then glow, slide and sweep on hover.
+# upgrade picker. pauses the game, cards stagger in and slide/glow on hover
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 const Upgrades = preload("res://scripts/upgrades.gd")
@@ -71,7 +70,7 @@ func _ready() -> void:
 	intro.tween_property(center, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_staggered_entrance()
 
-## Button with an icon on the left and a two-line name/description column.
+# card button: icon on the left, name + desc column
 func _make_option_button(id: String, def: Dictionary) -> Button:
 	var btn := UiTheme.make_button("", "green", BUTTON_SIZE, 13)
 	btn.clip_contents = true
@@ -104,7 +103,7 @@ func _make_option_button(id: String, def: Dictionary) -> Button:
 	btn.focus_exited.connect(_card_out.bind(btn))
 	return btn
 
-## Cards fade in and slide up one by one, staggered.
+# entrance: cards slide up one after another
 func _staggered_entrance() -> void:
 	for i in option_buttons.size():
 		var btn := option_buttons[i]
@@ -128,7 +127,7 @@ func _card_out(btn: Button) -> void:
 	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(btn, "position:x", 0.0, 0.16)
 
-## A soft highlight strip sweeping across the hovered card.
+# little shine that sweeps across the hovered card
 func _add_sweep(btn: Button) -> void:
 	var sweep := TextureRect.new()
 	sweep.mouse_filter = Control.MOUSE_FILTER_IGNORE
