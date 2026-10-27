@@ -51,5 +51,5 @@ godot --path .
 ## Credits
 
 - **Mystic Woods (free)** art pack by [Game Endeavor](https://game-endeavor.itch.io/mystic-woods) — non-commercial license
-- **Enemy Animations Set** skeleton sprites
+- **Enemy Animations Set** from the [2D Pixel Dungeon Asset Pack](https://pixel-poem.itch.io/dungeon-assetpuck) by [Pixel_Poem](https://pixel-poem.itch.io/)
 - Made with the [Godot Engine](https://godotengine.org/) (MIT)

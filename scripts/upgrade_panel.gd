@@ -5,9 +5,9 @@ const UiTheme = preload("res://scripts/ui_theme.gd")
 const Upgrades = preload("res://scripts/upgrades.gd")
 const Toast = preload("res://scripts/toast.gd")
 
-const TITLE_SIZE := 18
-const BUTTON_SIZE := Vector2(232, 40)
-const SEPARATION := 8
+const TITLE_SIZE := 15
+const BUTTON_SIZE := Vector2(204, 28)
+const SEPARATION := 5
 
 var overlay: ColorRect
 var vignette: TextureRect
@@ -35,7 +35,7 @@ func _ready() -> void:
 	var header := HBoxContainer.new()
 	header.alignment = BoxContainer.ALIGNMENT_CENTER
 	header.add_theme_constant_override("separation", 8)
-	header.add_child(UiTheme.make_icon("chest", 20))
+	header.add_child(UiTheme.make_icon("chest", 14))
 	var title := UiTheme.make_label("Choose an Upgrade", TITLE_SIZE, UiTheme.C_GOLD)
 	header.add_child(title)
 	content.add_child(header)
@@ -72,7 +72,7 @@ func _ready() -> void:
 
 # card button: icon on the left, name + desc column
 func _make_option_button(id: String, def: Dictionary) -> Button:
-	var btn := UiTheme.make_button("", "green", BUTTON_SIZE, 13)
+	var btn := UiTheme.make_button("", "green", BUTTON_SIZE, 11, false, true)
 	btn.clip_contents = true
 
 	var row := HBoxContainer.new()
@@ -82,9 +82,9 @@ func _make_option_button(id: String, def: Dictionary) -> Button:
 	btn.add_child(row)
 
 	var icon_holder := CenterContainer.new()
-	icon_holder.custom_minimum_size = Vector2(26, 0)
+	icon_holder.custom_minimum_size = Vector2(22, 0)
 	icon_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_holder.add_child(UiTheme.make_icon(UiTheme.upgrade_icon(id), 20))
+	icon_holder.add_child(UiTheme.make_icon(UiTheme.upgrade_icon(id), 14))
 	row.add_child(icon_holder)
 
 	var col := VBoxContainer.new()
@@ -92,8 +92,8 @@ func _make_option_button(id: String, def: Dictionary) -> Button:
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_theme_constant_override("separation", 0)
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.add_child(UiTheme.make_label(def["name"], 14, UiTheme.C_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
-	col.add_child(UiTheme.make_label(def["desc"], 10, UiTheme.C_MUTED, HORIZONTAL_ALIGNMENT_LEFT))
+	col.add_child(UiTheme.make_label(def["name"], 12, UiTheme.C_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
+	col.add_child(UiTheme.make_label(def["desc"], 9, UiTheme.C_MUTED, HORIZONTAL_ALIGNMENT_LEFT))
 	row.add_child(col)
 
 	# Hover/focus: slide right, glow (stylebox), and a highlight sweep

@@ -18,54 +18,53 @@ func _ready() -> void:
 
 	var content := VBoxContainer.new()
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_theme_constant_override("separation", 8)
+	content.add_theme_constant_override("separation", 3)
 
 	var header := HBoxContainer.new()
 	header.alignment = BoxContainer.ALIGNMENT_CENTER
-	header.add_theme_constant_override("separation", 8)
-	header.add_child(UiTheme.make_icon("diamond", 12))
-	header.add_child(UiTheme.make_label("PAUSED", 20, UiTheme.C_GOLD))
+	header.add_theme_constant_override("separation", 6)
+	header.add_child(UiTheme.make_icon("diamond", 10))
+	header.add_child(UiTheme.make_label("PAUSED", 16, UiTheme.C_GOLD))
 	content.add_child(header)
 
 	content.add_child(UiTheme.make_shimmer_divider(UiTheme.C_SLATE_BORDER))
 
-	var resume_btn := UiTheme.make_button("Resume", "green", Vector2(200, 34), 14, true)
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 8)
+	content.add_child(columns)
+
+	var buttons_col := VBoxContainer.new()
+	buttons_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	buttons_col.add_theme_constant_override("separation", 3)
+	columns.add_child(buttons_col)
+
+	var resume_btn := UiTheme.make_button("Resume", "green", Vector2(120, 22), 11, false, true)
 	resume_btn.pressed.connect(_resume)
-	content.add_child(resume_btn)
+	buttons_col.add_child(resume_btn)
 
-	var restart_btn := UiTheme.make_button("Restart Run", "brown", Vector2(200, 34), 14)
+	var restart_btn := UiTheme.make_button("Restart Run", "brown", Vector2(120, 22), 11, false, true)
 	restart_btn.pressed.connect(_restart)
-	content.add_child(restart_btn)
+	buttons_col.add_child(restart_btn)
 
-	var quit_btn := UiTheme.make_button("Quit to Menu", "red", Vector2(200, 34), 14)
+	var quit_btn := UiTheme.make_button("Quit to Menu", "red", Vector2(120, 22), 11, false, true)
 	quit_btn.pressed.connect(_quit)
-	content.add_child(quit_btn)
+	buttons_col.add_child(quit_btn)
 
-	content.add_child(UiTheme.make_divider(UiTheme.C_SLATE_BORDER))
+	var settings_col := VBoxContainer.new()
+	settings_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	settings_col.add_theme_constant_override("separation", 4)
+	columns.add_child(settings_col)
 
 	var sfx := _make_setting_row("SFX", UiTheme.make_slider(0.0, 100.0, GameState.sfx_volume))
 	sfx.slider.value_changed.connect(func(v: float) -> void: GameState.sfx_volume = v)
-	content.add_child(sfx.row)
+	settings_col.add_child(sfx.row)
 
 	var music := _make_setting_row("Music", UiTheme.make_slider(0.0, 100.0, GameState.music_volume))
 	music.slider.value_changed.connect(func(v: float) -> void: GameState.music_volume = v)
-	content.add_child(music.row)
+	settings_col.add_child(music.row)
 
-	var check := CheckBox.new()
-	check.text = "Fullscreen"
-	check.button_pressed = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-	check.add_theme_font_size_override("font_size", 13)
-	check.add_theme_color_override("font_color", UiTheme.C_TEXT)
-	check.add_theme_color_override("font_hover_color", Color.WHITE)
-	check.add_theme_color_override("font_pressed_color", UiTheme.C_GOLD)
-	check.add_theme_color_override("font_focus_color", Color.WHITE)
-	check.add_theme_icon_override("unchecked", _box_icon(false))
-	check.add_theme_icon_override("checked", _box_icon(true))
-	check.toggled.connect(_on_fullscreen)
-	content.add_child(check)
-
-	var hint := UiTheme.make_label("ESC to resume", 10, UiTheme.C_MUTED)
-	content.add_child(hint)
+	var hint := UiTheme.make_label("ESC to resume", 9, UiTheme.C_MUTED)
+	settings_col.add_child(hint)
 
 	center = UiTheme.make_frame(content)
 	add_child(center)
@@ -85,9 +84,9 @@ func _ready() -> void:
 
 func _make_setting_row(label_text: String, slider: HSlider) -> Dictionary:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	var label := UiTheme.make_label(label_text, 12, UiTheme.C_MUTED, HORIZONTAL_ALIGNMENT_LEFT)
-	label.custom_minimum_size = Vector2(52, 0)
+	row.add_theme_constant_override("separation", 8)
+	var label := UiTheme.make_label(label_text, 11, UiTheme.C_MUTED, HORIZONTAL_ALIGNMENT_LEFT)
+	label.custom_minimum_size = Vector2(36, 0)
 	row.add_child(label)
 	row.add_child(slider)
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL

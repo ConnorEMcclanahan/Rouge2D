@@ -482,7 +482,7 @@ const BUTTON_PALETTES := {
 }
 
 # button with hover pop, gold focus ring, and a "»" chevron if asked
-static func make_button(text: String, kind: String = "green", min_size := Vector2(150, 38), font_size := 15, chevron: bool = false) -> Button:
+static func make_button(text: String, kind: String = "green", min_size := Vector2(150, 38), font_size := 15, chevron: bool = false, tight: bool = false) -> Button:
 	var pal: Dictionary = BUTTON_PALETTES.get(kind, BUTTON_PALETTES["green"])
 	var button := Button.new()
 	button.text = text
@@ -502,6 +502,11 @@ static func make_button(text: String, kind: String = "green", min_size := Vector
 	var focus := make_panel_style(pal["hover"], C_GOLD, 6)
 	focus.set_border_width_all(3)
 	var disabled := make_panel_style(Color("262a24"), Color("3a3f36"), 6)
+	if tight:
+		# slim vertical padding so buttons fit the 162px-tall game canvas
+		for sb: StyleBoxFlat in [normal, hover, pressed, focus]:
+			sb.content_margin_top = 3.0
+			sb.content_margin_bottom = 4.0
 
 	button.add_theme_stylebox_override("normal", normal)
 	button.add_theme_stylebox_override("hover", hover)

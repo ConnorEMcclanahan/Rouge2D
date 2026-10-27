@@ -25,18 +25,18 @@ func _ready() -> void:
 
 	var content := VBoxContainer.new()
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_theme_constant_override("separation", 8)
+	content.add_theme_constant_override("separation", 5)
 
 	# Skull icon + title
 	var skull_row := HBoxContainer.new()
 	skull_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	skull_row.add_theme_constant_override("separation", 8)
-	skull_row.add_child(UiTheme.make_icon("skull", 24))
-	var title := UiTheme.make_label("You Died", 30, Color("e5736a"))
+	skull_row.add_child(UiTheme.make_icon("skull", 16))
+	var title := UiTheme.make_label("You Died", 22, Color("e5736a"))
 	skull_row.add_child(title)
 	content.add_child(skull_row)
 
-	var subtitle := UiTheme.make_label("the woods claim another...", 12, Color("c99a92"))
+	var subtitle := UiTheme.make_label("the woods claim another...", 10, Color("c99a92"))
 	content.add_child(subtitle)
 
 	var divider := UiTheme.make_shimmer_divider(Color("a86a55"))
@@ -48,20 +48,20 @@ func _ready() -> void:
 
 	var hearts_row := HBoxContainer.new()
 	hearts_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	hearts_row.add_theme_constant_override("separation", 4)
+	hearts_row.add_theme_constant_override("separation", 3)
 	for i in 3:
-		hearts_row.add_child(UiTheme.make_empty_heart_icon())
+		hearts_row.add_child(UiTheme.make_empty_heart_icon(Vector2(14, 12)))
 	content.add_child(hearts_row)
 
 	var buttons_row := HBoxContainer.new()
 	buttons_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons_row.add_theme_constant_override("separation", 12)
+	buttons_row.add_theme_constant_override("separation", 8)
 
-	var retry_btn := UiTheme.make_button("Try Again", "green", Vector2(120, 36), 14, true)
+	var retry_btn := UiTheme.make_button("Try Again", "green", Vector2(100, 24), 12, false, true)
 	retry_btn.pressed.connect(_on_retry)
 	buttons_row.add_child(retry_btn)
 
-	var menu_btn := UiTheme.make_button("Menu", "brown", Vector2(120, 36), 14)
+	var menu_btn := UiTheme.make_button("Menu", "brown", Vector2(100, 24), 12, false, true)
 	menu_btn.pressed.connect(_on_menu)
 	buttons_row.add_child(menu_btn)
 	content.add_child(buttons_row)
