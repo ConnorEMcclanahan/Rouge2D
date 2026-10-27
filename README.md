@@ -1,4 +1,5 @@
 # Rouge
+THIS IS A AI TEST DEMO GAME - HUMAN EDITS IN FUTURE
 
 A tiny 2D woods roguelike I'm making in **Godot 4.7**.
 
