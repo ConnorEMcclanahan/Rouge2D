@@ -129,6 +129,8 @@ func _update_stats_pos() -> void:
 	stats_plate.position = Vector2(vp_size.x - stats_plate.size.x - 6.0, 6.0)
 
 func _process(delta: float) -> void:
+	if time_label == null or kills_label == null:
+		return
 	GameState.run_elapsed += delta
 	var total := int(GameState.run_elapsed)
 	time_label.text = "%d:%02d" % [total / 60, total % 60]

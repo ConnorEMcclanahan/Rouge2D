@@ -12,7 +12,7 @@ func fade_to(path: String) -> void:
 	busy = true
 	var layer := CanvasLayer.new()
 	layer.layer = 100
-	get_tree().root.add_child(layer)
+	get_tree().root.add_child.call_deferred(layer)
 
 	var rect := ColorRect.new()
 	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

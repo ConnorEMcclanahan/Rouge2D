@@ -5,7 +5,18 @@ A tiny 2D woods roguelike built with **Godot 4.7**.
 Slash slimes and a skeleton miniboss, open the chest to pick from a set of
 roguelike upgrades, and see how long you can survive the woods.
 
-## Screenshots
+## Screenshots & Animations
+
+| Menu — bobbing title, fireflies, drifting mist | Upgrade cards — staggered entrance, hover slide + sweep |
+|:---:|:---:|
+| ![Menu](docs/gifs/menu.gif) | ![Upgrades](docs/gifs/upgrade.gif) |
+
+| Combat — damage numbers, boss bar, HUD stats | Game over — crimson wash, elastic pop |
+|:---:|:---:|
+| ![Combat](docs/gifs/world.gif) | ![Game over](docs/gifs/gameover.gif) |
+
+<details>
+<summary>Static screenshots</summary>
 
 | Title screen | Gameplay |
 |:---:|:---:|
@@ -14,6 +25,8 @@ roguelike upgrades, and see how long you can survive the woods.
 | Upgrade choice | Game over |
 |:---:|:---:|
 | ![Upgrade choice](docs/screenshots/upgrade.png) | ![Game over](docs/screenshots/gameover.png) |
+
+</details>
 
 ## Controls
 
@@ -30,6 +43,10 @@ roguelike upgrades, and see how long you can survive the woods.
 - Retro-arcade UI juice: breathing menu with drifting fireflies, squash-and-stretch
   buttons, staggered upgrade cards with hover glow + highlight sweep, hearts that
   shake and flash on damage (pulse on heal), and an elastic "You Died" cinematic
+- Portfolio-grade UI systems: floating combat numbers, boss nameplate with
+  segmented health bar, run timer + kill tracker, pause menu with volume sliders
+  and fullscreen toggle, upgrade toasts, and a pixel-dissolve scene transition
+  shader (`scripts/dissolve.gdshader`)
 - Pixel-art UI built entirely in code (`scripts/ui_theme.gd`)
 
 ## Running
