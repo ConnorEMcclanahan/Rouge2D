@@ -1,5 +1,6 @@
 extends CanvasLayer
-## Hearts HUD in a small bordered plate. Heart textures come from UiTheme.
+## Hearts HUD in a stone/leather plate. Hearts shake and flash on damage,
+## pulse when healing.
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 
@@ -22,7 +23,7 @@ func _ready() -> void:
 
 	plate = PanelContainer.new()
 	plate.name = "Plate"
-	var style := UiTheme.make_panel_style(Color("10150de6"), UiTheme.C_PANEL_BORDER, 5)
+	var style := UiTheme.make_panel_style(Color("241d14"), UiTheme.C_SLATE_BORDER, 5)
 	style.shadow_size = 2
 	style.shadow_offset = Vector2(0, 2)
 	style.content_margin_left = 8.0
@@ -76,14 +77,28 @@ func set_health(current: int) -> void:
 	if gained:
 		_pop_heart(current - 1)
 
-## Tiny scale-pop on a newly gained heart.
+## Damage feedback: hearts flash red while the plate shakes horizontally.
+func shake() -> void:
+	var base := plate.position
+	for heart in hearts:
+		heart.modulate = Color(2.5, 0.45, 0.45)
+	var tween := plate.create_tween()
+	for i in 6:
+		var offset := 3.0 if i % 2 == 0 else -3.0
+		tween.tween_property(plate, "position:x", base.x + offset, 0.045)
+	tween.tween_property(plate, "position", base, 0.05)
+	for heart in hearts:
+		var restore := heart.create_tween()
+		restore.tween_property(heart, "modulate", Color.WHITE, 0.35)
+
+## Heal feedback: scale bounce 1.3 -> 1.0.
 func _pop_heart(index: int) -> void:
 	if index < 0 or index >= hearts.size():
 		return
 	var heart := hearts[index]
-	heart.scale = Vector2(0.5, 0.5)
-	heart.modulate.a = 0.4
+	heart.scale = Vector2(1.3, 1.3)
+	heart.modulate.a = 0.5
 	var tween := heart.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(heart, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(heart, "modulate:a", 1.0, 0.2)
+	tween.tween_property(heart, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(heart, "modulate:a", 1.0, 0.25)

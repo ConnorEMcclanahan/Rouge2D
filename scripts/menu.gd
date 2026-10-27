@@ -5,28 +5,28 @@ extends Control
 const UiTheme = preload("res://scripts/ui_theme.gd")
 
 var bg: TextureRect
+var light: TextureRect
 var vignette: TextureRect
 var center: PanelContainer
 var content: VBoxContainer
 var title: Label
 
 func _ready() -> void:
-	bg = UiTheme.make_gradient_background(UiTheme.C_BG_TOP, UiTheme.C_BG_BOTTOM)
+	bg = UiTheme.make_gradient_background(Color("1d2b1c"), Color("050a06"))
 	add_child(bg)
 
-	_add_motes()
+	_add_fireflies()
 
-	vignette = UiTheme.make_vignette(0.5)
+	# Breathing radial glow behind the card
+	light = UiTheme.make_radial_light(Color(0.55, 0.48, 0.28, 0.16), Vector2(460, 360))
+	add_child(light)
+
+	vignette = UiTheme.make_vignette(0.55)
 	add_child(vignette)
-
-	center = PanelContainer.new()
-	center.add_theme_stylebox_override("panel", UiTheme.make_panel_style(UiTheme.C_PANEL_BG_SOFT, UiTheme.C_PANEL_BORDER, 8))
-	add_child(center)
 
 	content = VBoxContainer.new()
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.add_theme_constant_override("separation", 8)
-	center.add_child(content)
 
 	# Title row: slime mascot + game name
 	var title_row := HBoxContainer.new()
@@ -53,7 +53,7 @@ func _ready() -> void:
 	var subtitle := UiTheme.make_label("a tiny woods adventure", 12, UiTheme.C_MUTED)
 	content.add_child(subtitle)
 
-	content.add_child(UiTheme.make_divider(UiTheme.C_PANEL_BORDER))
+	content.add_child(UiTheme.make_divider(UiTheme.C_SLATE_BORDER))
 
 	var hearts_row := HBoxContainer.new()
 	hearts_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -78,13 +78,16 @@ func _ready() -> void:
 	var hint := UiTheme.make_label("WASD move  ·  SPACE attack", 10, UiTheme.C_MUTED)
 	content.add_child(hint)
 
+	center = UiTheme.make_frame(content)
+	add_child(center)
+
 	await get_tree().process_frame
 	_layout()
 	get_viewport().size_changed.connect(_layout)
 
 	play_btn.grab_focus()
 
-	# Breathing title + mascot hop + card fade-in
+	# Breathing title + mascot hop + slow light pulse + card fade-in
 	var title_tween := create_tween().set_loops()
 	title_tween.tween_property(title, "modulate:a", 0.82, 0.9).set_trans(Tween.TRANS_SINE)
 	title_tween.tween_property(title, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
@@ -93,9 +96,19 @@ func _ready() -> void:
 	mascot_tween.tween_property(mascot, "position:y", 4.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	mascot_tween.tween_property(mascot, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
+	var light_tween := create_tween().set_loops()
+	light_tween.tween_property(light, "modulate:a", 1.0, 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	light_tween.tween_property(light, "modulate:a", 0.55, 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	var light_scale := create_tween().set_loops()
+	light_scale.tween_property(light, "scale", Vector2(1.12, 1.12), 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	light_scale.tween_property(light, "scale", Vector2.ONE, 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
 	center.modulate.a = 0.0
-	var intro := create_tween()
-	intro.tween_property(center, "modulate:a", 1.0, 0.45)
+	center.position.y += 10.0
+	var intro := create_tween().set_parallel(true)
+	intro.tween_property(center, "modulate:a", 1.0, 0.5)
+	intro.tween_property(center, "position:y", center.position.y - 10.0, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func _layout() -> void:
 	var vp_size: Vector2 = get_viewport().get_visible_rect().size
@@ -105,29 +118,33 @@ func _layout() -> void:
 	vignette.position = Vector2.ZERO
 	center.reset_size()
 	center.position = (vp_size - center.size) * 0.5
+	light.position = (vp_size - light.size) * 0.5 + Vector2(0, -10)
 
-## Small glowing motes drifting upward behind the menu card.
-func _add_motes() -> void:
-	for i in 10:
-		var mote := ColorRect.new()
-		mote.color = Color(1.0, 0.9, 0.55, randf_range(0.05, 0.16))
-		mote.size = Vector2(3, 3)
-		mote.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		mote.position = Vector2(randf() * 288.0, randf() * 162.0)
-		add_child(mote)
-		_drift(mote)
+## Fireflies: glowing dots drifting upward with a side-to-side sway.
+func _add_fireflies() -> void:
+	for i in 14:
+		var fly := ColorRect.new()
+		fly.color = Color(1.0, 0.85, 0.4, randf_range(0.25, 0.6))
+		fly.size = Vector2(3, 3)
+		fly.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		fly.position = Vector2(randf() * 288.0, randf() * 162.0)
+		add_child(fly)
+		_drift_firefly(fly)
 
-func _drift(mote: ColorRect) -> void:
-	var base_y := mote.position.y
-	var dur := randf_range(5.0, 9.0)
-	var tween := mote.create_tween()
+func _drift_firefly(fly: ColorRect) -> void:
+	var base_x := fly.position.x
+	var base_y := fly.position.y
+	var dur := randf_range(6.0, 11.0)
+	var tween := fly.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(mote, "position:y", base_y - 46.0, dur).set_trans(Tween.TRANS_LINEAR)
-	tween.tween_property(mote, "modulate:a", 0.0, dur).set_trans(Tween.TRANS_LINEAR)
+	tween.tween_property(fly, "position:y", base_y - 55.0, dur).set_trans(Tween.TRANS_LINEAR)
+	tween.tween_method(func(phase: float) -> void:
+		fly.position.x = base_x + sin(phase * TAU) * 10.0, 0.0, 2.0, dur)
+	tween.tween_property(fly, "modulate:a", 0.0, dur * 0.85).set_trans(Tween.TRANS_LINEAR)
 	tween.chain().tween_callback(func() -> void:
-		mote.position.y = base_y
-		mote.modulate.a = 1.0
-		_drift(mote))
+		fly.position = Vector2(base_x, base_y)
+		fly.modulate.a = randf_range(0.25, 0.6)
+		_drift_firefly(fly))
 
 func _on_play_pressed() -> void:
 	GameState.reset_run()

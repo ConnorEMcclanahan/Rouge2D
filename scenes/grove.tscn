@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bd5qsksp8p6j5"]
+
+[ext_resource type="Script" path="res://scripts/grove.gd" id="1_grove"]
+
+[node name="grove" type="Node2D" unique_id=2045666663]
+script = ExtResource("1_grove")

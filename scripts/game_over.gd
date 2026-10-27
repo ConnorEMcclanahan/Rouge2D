@@ -1,31 +1,31 @@
 extends CanvasLayer
-## Game-over overlay shown after the player dies.
-## Laid out manually against the viewport (anchors are unreliable).
+## Game-over overlay: crimson/black cinematic wash, then an elastic dialog pop.
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 
 var bg: TextureRect
+var flash: ColorRect
 var vignette: TextureRect
 var center: PanelContainer
 
 func _ready() -> void:
 	layer = 20
 
-	bg = UiTheme.make_gradient_background(Color("2a0e0c"), Color("0a0302"))
-	bg.modulate.a = 0.94
+	bg = UiTheme.make_gradient_background(Color("200807"), Color("070202"))
 	add_child(bg)
+
+	# Deep crimson/black fade washing over the whole viewport
+	flash = ColorRect.new()
+	flash.color = Color(0.16, 0.02, 0.03, 0.0)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
 
 	vignette = UiTheme.make_vignette(0.5)
 	add_child(vignette)
 
-	center = PanelContainer.new()
-	center.add_theme_stylebox_override("panel", UiTheme.make_panel_style(Color("241214e6"), Color("8c443c"), 8))
-	add_child(center)
-
 	var content := VBoxContainer.new()
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.add_theme_constant_override("separation", 8)
-	center.add_child(content)
 
 	# Skull icon + title
 	var skull_row := HBoxContainer.new()
@@ -61,24 +61,38 @@ func _ready() -> void:
 	buttons_row.add_child(menu_btn)
 	content.add_child(buttons_row)
 
+	center = UiTheme.make_frame(content, Color("201213"), Color("8c443c"))
+	add_child(center)
+
 	await get_tree().process_frame
 	_layout()
 	get_viewport().size_changed.connect(_layout)
 
 	retry_btn.grab_focus()
 
+	# Crimson wash first, then the dialog scales up with an elastic pop
+	var wash := create_tween()
+	wash.tween_property(flash, "color:a", 0.85, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	wash.tween_property(flash, "color:a", 0.55, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
 	center.modulate.a = 0.0
-	var intro := create_tween()
-	intro.tween_property(center, "modulate:a", 1.0, 0.35)
+	center.scale = Vector2(0.8, 0.8)
+	center.pivot_offset = center.size * 0.5
+	var intro := create_tween().set_parallel(true)
+	intro.tween_property(center, "modulate:a", 1.0, 0.25)
+	intro.tween_property(center, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 func _layout() -> void:
 	var vp_size: Vector2 = get_viewport().get_visible_rect().size
 	bg.size = vp_size
 	bg.position = Vector2.ZERO
+	flash.size = vp_size
+	flash.position = Vector2.ZERO
 	vignette.size = vp_size
 	vignette.position = Vector2.ZERO
 	center.reset_size()
 	center.position = (vp_size - center.size) * 0.5
+	center.pivot_offset = center.size * 0.5
 
 func _on_retry() -> void:
 	GameState.reset_run()

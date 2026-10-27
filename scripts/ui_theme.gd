@@ -23,6 +23,9 @@ const C_BROWN_BORDER := Color("8a6d4d")
 const C_RED := Color("b04840")
 const C_RED_HOVER := Color("c75c52")
 const C_RED_BORDER := Color("e08a7e")
+const C_SLATE_BG := Color("1b1814")
+const C_SLATE_BORDER := Color("73582e")
+const C_SLATE_RIM := Color("3a2d1a")
 
 # --- Icon pixel patterns (strings are 11 chars wide) -------------------------
 const ICONS := {
@@ -291,7 +294,7 @@ static func make_label(text: String, font_size: int, color: Color = C_TEXT, alig
 # --- Panels ------------------------------------------------------------------
 
 ## Flat panel style with border, rounded corners and a soft drop shadow.
-static func make_panel_style(bg: Color = C_PANEL_BG, border: Color = C_PANEL_BORDER, radius: int = 6) -> StyleBoxFlat:
+static func make_panel_style(bg: Color = C_SLATE_BG, border: Color = C_SLATE_BORDER, radius: int = 6) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
 	sb.border_color = border
@@ -311,6 +314,47 @@ static func make_divider(color: Color = C_PANEL_BORDER, height: float = 2.0) -> 
 	var rect := ColorRect.new()
 	rect.color = color
 	rect.custom_minimum_size = Vector2(0, height)
+	return rect
+
+## Wraps `child` in a double-border frame: dark outer rim + slate inner panel.
+## The rim reads as an inner shadow/bevel around the dialog.
+static func make_frame(child: Control, bg: Color = C_SLATE_BG, border: Color = C_SLATE_BORDER) -> PanelContainer:
+	var outer := PanelContainer.new()
+	var rim := StyleBoxFlat.new()
+	rim.bg_color = C_SLATE_RIM
+	rim.set_corner_radius_all(10)
+	rim.shadow_color = Color(0, 0, 0, 0.6)
+	rim.shadow_size = 8
+	rim.shadow_offset = Vector2(0, 4)
+	rim.content_margin_left = 3.0
+	rim.content_margin_right = 3.0
+	rim.content_margin_top = 3.0
+	rim.content_margin_bottom = 4.0
+	outer.add_theme_stylebox_override("panel", rim)
+	var inner := PanelContainer.new()
+	inner.add_theme_stylebox_override("panel", make_panel_style(bg, border, 8))
+	outer.add_child(inner)
+	inner.add_child(child)
+	return outer
+
+## Soft radial light — used for breathing glows behind menu cards.
+static func make_radial_light(inner: Color, size := Vector2(420, 320)) -> TextureRect:
+	var rect := TextureRect.new()
+	var gradient := Gradient.new()
+	gradient.set_color(0, inner)
+	gradient.set_color(1, Color(inner, 0.0))
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(0.0, 0.5)
+	texture.width = 256
+	texture.height = 256
+	rect.texture = texture
+	rect.custom_minimum_size = size
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_SCALE
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
 
 # --- Buttons -----------------------------------------------------------------
@@ -348,6 +392,8 @@ static func make_button(text: String, kind: String = "green", min_size := Vector
 
 	var normal := make_panel_style(pal["bg"], pal["border"], 6)
 	var hover := make_panel_style(pal["hover"], pal["border_hover"], 6)
+	hover.shadow_color = Color(pal["border_hover"], 0.6)
+	hover.shadow_size = 8
 	var pressed := make_panel_style((pal["bg"] as Color).darkened(0.35), (pal["border"] as Color).darkened(0.2), 6)
 	pressed.shadow_size = 2
 	var focus := make_panel_style(pal["hover"], C_GOLD, 6)
@@ -366,9 +412,12 @@ static func make_button(text: String, kind: String = "green", min_size := Vector
 	button.mouse_exited.connect(_shrink.bind(button))
 	button.focus_entered.connect(_grow.bind(button))
 	button.focus_exited.connect(_shrink.bind(button))
+	button.button_down.connect(_squash.bind(button))
+	button.button_up.connect(_unsquash.bind(button))
 	return button
 
 static func _grow(button: Button) -> void:
+	_ui_sound_stub("hover")
 	button.scale = Vector2.ONE
 	var tween := button.create_tween()
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -378,6 +427,23 @@ static func _shrink(button: Button) -> void:
 	var tween := button.create_tween()
 	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(button, "scale", Vector2.ONE, 0.14)
+
+## Press-down squash before the action fires.
+static func _squash(button: Button) -> void:
+	_ui_sound_stub("press")
+	var tween := button.create_tween()
+	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "scale", Vector2(0.95, 0.95), 0.06)
+
+static func _unsquash(button: Button) -> void:
+	var target := Vector2(1.05, 1.05) if button.is_hovered() else Vector2.ONE
+	var tween := button.create_tween()
+	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "scale", target, 0.12)
+
+## Placeholder for UI sound effects — wire an AudioStreamPlayer here later.
+static func _ui_sound_stub(kind: String) -> void:
+	pass
 
 # --- Misc widgets ------------------------------------------------------------
 

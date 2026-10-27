@@ -199,6 +199,7 @@ func take_damage(amount: int, source: Node2D) -> void:
 		return
 	health -= amount
 	hud.set_health(health)
+	hud.shake()
 
 	if health <= 0:
 		die()

@@ -1,6 +1,6 @@
 extends CanvasLayer
 ## Roguelike upgrade choice panel. Pauses the game while open.
-## A titled card with three icon + text option buttons.
+## Option cards stagger in, then glow, slide and sweep on hover.
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 const Upgrades = preload("res://scripts/upgrades.gd")
@@ -12,6 +12,7 @@ const SEPARATION := 8
 var overlay: ColorRect
 var vignette: TextureRect
 var center: PanelContainer
+var option_buttons: Array[Button] = []
 var chosen := false
 
 func _ready() -> void:
@@ -27,14 +28,9 @@ func _ready() -> void:
 	vignette = UiTheme.make_vignette(0.3)
 	add_child(vignette)
 
-	center = PanelContainer.new()
-	center.add_theme_stylebox_override("panel", UiTheme.make_panel_style(UiTheme.C_PANEL_BG_SOFT, UiTheme.C_PANEL_BORDER_LIGHT, 8))
-	add_child(center)
-
 	var content := VBoxContainer.new()
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.add_theme_constant_override("separation", SEPARATION)
-	center.add_child(content)
 
 	var header := HBoxContainer.new()
 	header.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -44,7 +40,7 @@ func _ready() -> void:
 	header.add_child(title)
 	content.add_child(header)
 
-	content.add_child(UiTheme.make_divider(UiTheme.C_PANEL_BORDER))
+	content.add_child(UiTheme.make_divider(UiTheme.C_SLATE_BORDER))
 
 	var first: Button = null
 	for id in Upgrades.roll_three():
@@ -52,8 +48,12 @@ func _ready() -> void:
 		var btn := _make_option_button(id, def)
 		btn.pressed.connect(_on_pick.bind(id))
 		content.add_child(btn)
+		option_buttons.append(btn)
 		if first == null:
 			first = btn
+
+	center = UiTheme.make_frame(content)
+	add_child(center)
 
 	await get_tree().process_frame
 	_layout()
@@ -61,17 +61,19 @@ func _ready() -> void:
 	if first:
 		first.grab_focus()
 
-	# Pop-in
+	# Dialog fade + staggered card entrance
 	center.modulate.a = 0.0
-	center.scale = Vector2(0.92, 0.92)
+	center.scale = Vector2(0.95, 0.95)
 	center.pivot_offset = center.size * 0.5
 	var intro := create_tween().set_parallel(true)
-	intro.tween_property(center, "modulate:a", 1.0, 0.22)
-	intro.tween_property(center, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	intro.tween_property(center, "modulate:a", 1.0, 0.2)
+	intro.tween_property(center, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_staggered_entrance()
 
 ## Button with an icon on the left and a two-line name/description column.
 func _make_option_button(id: String, def: Dictionary) -> Button:
 	var btn := UiTheme.make_button("", "green", BUTTON_SIZE, 13)
+	btn.clip_contents = true
 
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,7 +95,59 @@ func _make_option_button(id: String, def: Dictionary) -> Button:
 	col.add_child(UiTheme.make_label(def["name"], 14, UiTheme.C_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
 	col.add_child(UiTheme.make_label(def["desc"], 10, UiTheme.C_MUTED, HORIZONTAL_ALIGNMENT_LEFT))
 	row.add_child(col)
+
+	# Hover/focus: slide right, glow (stylebox), and a highlight sweep
+	btn.mouse_entered.connect(_card_in.bind(btn))
+	btn.mouse_exited.connect(_card_out.bind(btn))
+	btn.focus_entered.connect(_card_in.bind(btn))
+	btn.focus_exited.connect(_card_out.bind(btn))
 	return btn
+
+## Cards fade in and slide up one by one, staggered.
+func _staggered_entrance() -> void:
+	for i in option_buttons.size():
+		var btn := option_buttons[i]
+		var slot_y := btn.position.y
+		btn.position.y += 26.0
+		btn.modulate.a = 0.0
+		var tween := create_tween()
+		tween.tween_interval(0.08 * i)
+		tween.set_parallel(true)
+		tween.tween_property(btn, "modulate:a", 1.0, 0.28)
+		tween.tween_property(btn, "position:y", slot_y, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _card_in(btn: Button) -> void:
+	var tween := btn.create_tween()
+	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(btn, "position:x", 8.0, 0.16)
+	_add_sweep(btn)
+
+func _card_out(btn: Button) -> void:
+	var tween := btn.create_tween()
+	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(btn, "position:x", 0.0, 0.16)
+
+## A soft highlight strip sweeping across the hovered card.
+func _add_sweep(btn: Button) -> void:
+	var sweep := TextureRect.new()
+	sweep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sweep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sweep.stretch_mode = TextureRect.STRETCH_SCALE
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(1, 1, 1, 0.0))
+	gradient.set_color(0.5, Color(1, 1, 1, 0.16))
+	gradient.set_color(1, Color(1, 1, 1, 0.0))
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill_from = Vector2(0, 0)
+	texture.fill_to = Vector2(1, 0)
+	sweep.texture = texture
+	sweep.size = Vector2(70, BUTTON_SIZE.y)
+	sweep.position = Vector2(-70, 0)
+	btn.add_child(sweep)
+	var tween := sweep.create_tween()
+	tween.tween_property(sweep, "position:x", BUTTON_SIZE.x + 12.0, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_callback(sweep.queue_free)
 
 func _layout() -> void:
 	var vp_size: Vector2 = get_viewport().get_visible_rect().size
@@ -103,6 +157,7 @@ func _layout() -> void:
 	vignette.position = Vector2.ZERO
 	center.reset_size()
 	center.position = (vp_size - center.size) * 0.5
+	center.pivot_offset = center.size * 0.5
 
 func _on_pick(id: String) -> void:
 	if chosen:
