@@ -136,7 +136,7 @@ func _add_sweep(btn: Button) -> void:
 	sweep.stretch_mode = TextureRect.STRETCH_SCALE
 	var gradient := Gradient.new()
 	gradient.set_color(0, Color(1, 1, 1, 0.0))
-	gradient.set_color(0.5, Color(1, 1, 1, 0.16))
+	gradient.set_color(0.5, Color(1, 1, 1, 0.24))
 	gradient.set_color(1, Color(1, 1, 1, 0.0))
 	var texture := GradientTexture2D.new()
 	texture.gradient = gradient

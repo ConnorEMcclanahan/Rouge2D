@@ -1,25 +1,26 @@
 extends Node
-## GIF capture harness — one launch, four modes sequentially.
-## Saves resized frames (480x270) to docs/gifs/frames/ and a fresh
-## static 1152x648 shot per mode to docs/screenshots/.
+## GIF capture harness (SubViewport).
+## Usage: godot --display-driver wayland --rendering-driver opengl3 res://shot_gif.tscn -- menu
 
 var mode := ""
 var frame_index := 0
-var static_index := 0
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
-	var modes: Array[String] = args if args.size() > 0 else ["menu", "world", "upgrade", "gameover"]
+	var modes: Array[String] = []
+	for a in args:
+		modes.append(a)
+	if modes.is_empty():
+		modes = ["menu", "world", "upgrade", "gameover"]
 	for m in modes:
-		mode = m
 		await _capture_mode(m)
 		await get_tree().create_timer(0.3).timeout
 	print("ALL GIF FRAMES DONE")
 	get_tree().quit()
 
 func _capture_mode(m: String) -> void:
+	mode = m
 	frame_index = 0
-	static_index = 0
 	var sub := SubViewport.new()
 	sub.size = Vector2i(1152, 648)
 	sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -31,22 +32,18 @@ func _capture_mode(m: String) -> void:
 	match m:
 		"menu":
 			target = load("res://scenes/menu.tscn").instantiate()
-			sub.add_child(target)
 		"world":
 			target = load("res://scenes/world.tscn").instantiate()
-			sub.add_child(target)
-			_schedule_world_sim(target)
 		"upgrade":
 			target = preload("res://scripts/upgrade_panel.gd").new()
-			sub.add_child(target)
-			_schedule_upgrade_sim(target)
 		"gameover":
 			target = preload("res://scripts/game_over.gd").new()
-			sub.add_child(target)
+	sub.add_child(target)
+	if m == "world":
+		_schedule_world_sim(target)
+	elif m == "upgrade":
+		_schedule_upgrade_sim(target)
 	await get_tree().process_frame
-
-	# The upgrade panel pauses the tree in its _ready; unpause so its
-	# entrance/hover animations play while we capture.
 	if m == "upgrade":
 		get_tree().paused = false
 
@@ -54,7 +51,6 @@ func _capture_mode(m: String) -> void:
 		await get_tree().create_timer(0.09).timeout
 		_snap(sub)
 
-	# One full-res static shot for the README gallery
 	var big := sub.get_texture().get_image()
 	big.save_png("res://docs/screenshots/%s.png" % m)
 	sub.queue_free()
@@ -67,7 +63,6 @@ func _snap(sub: SubViewport) -> void:
 
 ## Simulated interactions for the world GIF.
 func _schedule_world_sim(world: Node) -> void:
-	# Pan camera toward the boss, engage him, then trade hits.
 	await get_tree().create_timer(0.4).timeout
 	var player := world.get_node_or_null("Node2D/player") as Node2D
 	var bones := world.get_node_or_null("Node2D/bones")
