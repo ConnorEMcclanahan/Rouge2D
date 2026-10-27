@@ -8,6 +8,8 @@ const ATTACK_WINDOW = 0.18
 const HIT_STUN_TIME = 0.4
 const HURT_FLASH_TIME = 0.25
 
+const UiTheme = preload("res://scripts/ui_theme.gd")
+
 @onready var animated_sprite = $AnimatedSprite2D
 
 var hud = null
@@ -25,7 +27,7 @@ var hurt_flash_time: float = 0.0
 var swing_hit_enemies: Array[Node] = []
 var map_bounds: Rect2 = Rect2()
 var nearby_interactable: Node = null
-var prompt_label: Label
+var prompt: Control
 
 func _ready():
 	add_to_group("player")
@@ -311,17 +313,17 @@ func refresh_from_gamestate() -> void:
 	hud.set_health(health)
 
 func _build_interact_prompt() -> void:
-	prompt_label = Label.new()
-	prompt_label.text = "SPACE"
-	prompt_label.visible = false
-	prompt_label.add_theme_font_size_override("font_size", 10)
-	prompt_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
-	prompt_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	prompt_label.add_theme_constant_override("outline_size", 3)
-	add_child(prompt_label)
+	prompt = UiTheme.make_keycap("SPACE", 10)
+	prompt.name = "InteractPrompt"
+	prompt.visible = false
+	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(prompt)
 
 func _update_prompt() -> void:
 	var show := nearby_interactable != null and not is_dead
-	prompt_label.visible = show
+	if show and not prompt.visible:
+		prompt.reset_size()
+	prompt.visible = show
 	if show:
-		prompt_label.global_position = global_position + Vector2(-16, -38)
+		var bob := sin(Time.get_ticks_msec() * 0.006) * 2.0
+		prompt.global_position = global_position + Vector2(-prompt.size.x * 0.5, -46.0 + bob)

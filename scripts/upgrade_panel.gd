@@ -1,16 +1,17 @@
 extends CanvasLayer
 ## Roguelike upgrade choice panel. Pauses the game while open.
-## Sized to fit the 288x162 game viewport: title + 3 compact option buttons.
+## A titled card with three icon + text option buttons.
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 const Upgrades = preload("res://scripts/upgrades.gd")
 
-const TITLE_SIZE := 16
-const BUTTON_SIZE := Vector2(230, 34)
-const SEPARATION := 6
+const TITLE_SIZE := 18
+const BUTTON_SIZE := Vector2(232, 40)
+const SEPARATION := 8
 
 var overlay: ColorRect
-var center: VBoxContainer
+var vignette: TextureRect
+var center: PanelContainer
 var chosen := false
 
 func _ready() -> void:
@@ -19,42 +20,89 @@ func _ready() -> void:
 	get_tree().paused = true
 
 	overlay = ColorRect.new()
-	overlay.color = Color(0, 0, 0, 0.55)
+	overlay.color = Color(0, 0, 0, 0.6)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(overlay)
 
-	center = VBoxContainer.new()
-	center.alignment = BoxContainer.ALIGNMENT_CENTER
-	center.add_theme_constant_override("separation", SEPARATION)
+	vignette = UiTheme.make_vignette(0.3)
+	add_child(vignette)
+
+	center = PanelContainer.new()
+	center.add_theme_stylebox_override("panel", UiTheme.make_panel_style(UiTheme.C_PANEL_BG_SOFT, UiTheme.C_PANEL_BORDER_LIGHT, 8))
 	add_child(center)
 
-	var title := UiTheme.make_label("Choose an Upgrade", TITLE_SIZE, Color(1.0, 0.9, 0.6))
-	title.custom_minimum_size = Vector2(BUTTON_SIZE.x, TITLE_SIZE + 4)
-	center.add_child(title)
+	var content := VBoxContainer.new()
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", SEPARATION)
+	center.add_child(content)
+
+	var header := HBoxContainer.new()
+	header.alignment = BoxContainer.ALIGNMENT_CENTER
+	header.add_theme_constant_override("separation", 8)
+	header.add_child(UiTheme.make_icon("chest", 20))
+	var title := UiTheme.make_label("Choose an Upgrade", TITLE_SIZE, UiTheme.C_GOLD)
+	header.add_child(title)
+	content.add_child(header)
+
+	content.add_child(UiTheme.make_divider(UiTheme.C_PANEL_BORDER))
 
 	var first: Button = null
 	for id in Upgrades.roll_three():
 		var def: Dictionary = Upgrades.UPGRADE_DEFS[id]
-		var btn := UiTheme.make_button("%s\n%s" % [def["name"], def["desc"]])
-		btn.custom_minimum_size = BUTTON_SIZE
-		btn.add_theme_font_size_override("font_size", 12)
+		var btn := _make_option_button(id, def)
 		btn.pressed.connect(_on_pick.bind(id))
-		center.add_child(btn)
+		content.add_child(btn)
 		if first == null:
 			first = btn
 
+	await get_tree().process_frame
 	_layout()
 	get_viewport().size_changed.connect(_layout)
 	if first:
 		first.grab_focus()
 
+	# Pop-in
+	center.modulate.a = 0.0
+	center.scale = Vector2(0.92, 0.92)
+	center.pivot_offset = center.size * 0.5
+	var intro := create_tween().set_parallel(true)
+	intro.tween_property(center, "modulate:a", 1.0, 0.22)
+	intro.tween_property(center, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## Button with an icon on the left and a two-line name/description column.
+func _make_option_button(id: String, def: Dictionary) -> Button:
+	var btn := UiTheme.make_button("", "green", BUTTON_SIZE, 13)
+
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.add_theme_constant_override("separation", 10)
+	btn.add_child(row)
+
+	var icon_holder := CenterContainer.new()
+	icon_holder.custom_minimum_size = Vector2(26, 0)
+	icon_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_holder.add_child(UiTheme.make_icon(UiTheme.upgrade_icon(id), 20))
+	row.add_child(icon_holder)
+
+	var col := VBoxContainer.new()
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override("separation", 0)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_child(UiTheme.make_label(def["name"], 14, UiTheme.C_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
+	col.add_child(UiTheme.make_label(def["desc"], 10, UiTheme.C_MUTED, HORIZONTAL_ALIGNMENT_LEFT))
+	row.add_child(col)
+	return btn
+
 func _layout() -> void:
 	var vp_size: Vector2 = get_viewport().get_visible_rect().size
 	overlay.size = vp_size
 	overlay.position = Vector2.ZERO
-	var total_h: float = (TITLE_SIZE + 4) + BUTTON_SIZE.y * 3.0 + SEPARATION * 3.0
-	center.size = Vector2(BUTTON_SIZE.x, total_h)
-	center.position = Vector2((vp_size.x - center.size.x) * 0.5, (vp_size.y - center.size.y) * 0.5)
+	vignette.size = vp_size
+	vignette.position = Vector2.ZERO
+	center.reset_size()
+	center.position = (vp_size - center.size) * 0.5
 
 func _on_pick(id: String) -> void:
 	if chosen:
@@ -67,4 +115,3 @@ func _on_pick(id: String) -> void:
 		player.refresh_from_gamestate()
 	get_tree().paused = false
 	queue_free()
-
