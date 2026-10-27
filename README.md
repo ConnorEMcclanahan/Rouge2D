@@ -27,6 +27,9 @@ roguelike upgrades, and see how long you can survive the woods.
 - Zelda-style heart HUD, and a miniboss that shows its own hearts
 - Chest shrine with 6 upgrades: Hearty, Swift, Sharp, Quick, Heavy, Sturdy
 - Y-sorted trees, cliffs you can hop down, knockback combat with i-frames
+- Retro-arcade UI juice: breathing menu with drifting fireflies, squash-and-stretch
+  buttons, staggered upgrade cards with hover glow + highlight sweep, hearts that
+  shake and flash on damage (pulse on heal), and an elastic "You Died" cinematic
 - Pixel-art UI built entirely in code (`scripts/ui_theme.gd`)
 
 ## Running
