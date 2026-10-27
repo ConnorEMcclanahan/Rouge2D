@@ -9,6 +9,7 @@ const HIT_STUN_TIME = 0.4
 const HURT_FLASH_TIME = 0.25
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
+const CombatText = preload("res://scripts/combat_text.gd")
 
 @onready var animated_sprite = $AnimatedSprite2D
 
@@ -28,6 +29,7 @@ var swing_hit_enemies: Array[Node] = []
 var map_bounds: Rect2 = Rect2()
 var nearby_interactable: Node = null
 var prompt: Control
+var pause_menu: CanvasLayer = null
 
 func _ready():
 	add_to_group("player")
@@ -99,6 +101,10 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(delta):
+	# Pause menu (Esc)
+	if Input.is_action_just_pressed("ui_cancel") and not is_dead:
+		_toggle_pause()
+
 	# Never walk out of the painted map
 	if map_bounds.size != Vector2.ZERO:
 		global_position.x = clampf(global_position.x, map_bounds.position.x + 6.0, map_bounds.end.x - 6.0)
@@ -200,6 +206,7 @@ func take_damage(amount: int, source: Node2D) -> void:
 	health -= amount
 	hud.set_health(health)
 	hud.shake()
+	CombatText.spawn(get_parent(), global_position, "-%d" % amount, Color("ff6a5e"), 14)
 
 	if health <= 0:
 		die()
@@ -235,6 +242,16 @@ func _show_game_over() -> void:
 	var game_over = preload("res://scripts/game_over.gd").new()
 	game_over.name = "GameOver"
 	get_tree().current_scene.add_child(game_over)
+
+func _toggle_pause() -> void:
+	if get_tree().paused:
+		if pause_menu and is_instance_valid(pause_menu):
+			pause_menu.queue_free()
+			pause_menu = null
+			get_tree().paused = false
+		return
+	pause_menu = preload("res://scripts/pause_menu.gd").new()
+	get_tree().current_scene.add_child(pause_menu)
 
 func start_attack():
 	if is_attacking or is_dead:

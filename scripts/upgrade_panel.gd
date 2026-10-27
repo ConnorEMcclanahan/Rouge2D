@@ -4,6 +4,7 @@ extends CanvasLayer
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 const Upgrades = preload("res://scripts/upgrades.gd")
+const Toast = preload("res://scripts/toast.gd")
 
 const TITLE_SIZE := 18
 const BUTTON_SIZE := Vector2(232, 40)
@@ -165,6 +166,8 @@ func _on_pick(id: String) -> void:
 	chosen = true
 	GameState.apply_upgrade(id)
 	GameState.chest_used = true
+	var def: Dictionary = Upgrades.UPGRADE_DEFS[id]
+	Toast.show("%s! %s" % [def["name"], def["desc"]], UiTheme.upgrade_icon(id))
 	var player := get_tree().get_first_node_in_group("player")
 	if player and player.has_method("refresh_from_gamestate"):
 		player.refresh_from_gamestate()

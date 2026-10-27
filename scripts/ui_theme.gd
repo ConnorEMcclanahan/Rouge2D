@@ -115,6 +115,29 @@ const ICONS := {
 		"01111111110",
 		"01111111110",
 	],
+	"clock": [
+		"00111111100",
+		"01111111110",
+		"11111111111",
+		"11111011111",
+		"11111011111",
+		"11111011111",
+		"11111000111",
+		"11111111111",
+		"01111111110",
+		"00111111100",
+	],
+	"diamond": [
+		"00000100000",
+		"00001110000",
+		"00011111000",
+		"00111111100",
+		"01111111110",
+		"00111111100",
+		"00011111000",
+		"00001110000",
+		"00000100000",
+	],
 }
 
 # Icon id -> [base, highlight, shade, outline, specular]
@@ -127,6 +150,8 @@ const ICON_TINTS := {
 	"push": [Color("c98f4e"), Color("f2c089"), Color("7c4f22"), Color("45290e"), Color("ffe9d0")],
 	"skull": [Color("e8e2d0"), Color("ffffff"), Color("8f8977"), Color("4a463a"), Color("ffffff")],
 	"chest": [Color("a06c2e"), Color("d9a054"), Color("5e3c14"), Color("33200a"), Color("f2d489")],
+	"clock": [Color("e8c56a"), Color("ffefad"), Color("9c7c2a"), Color("574313"), Color("fff8d8")],
+	"diamond": [Color("e6d8a8"), Color("fff4d0"), Color("a08a4c"), Color("5a4a20"), Color("ffffff")],
 }
 
 const HEART_PATTERN := [
@@ -316,8 +341,8 @@ static func make_divider(color: Color = C_PANEL_BORDER, height: float = 2.0) -> 
 	rect.custom_minimum_size = Vector2(0, height)
 	return rect
 
-## Wraps `child` in a double-border frame: dark outer rim + slate inner panel.
-## The rim reads as an inner shadow/bevel around the dialog.
+## Wraps `child` in a framed dialog: dark rim + slate panel + stitched leather
+## border. The stitch dashes read as hand-sewn leather around the card.
 static func make_frame(child: Control, bg: Color = C_SLATE_BG, border: Color = C_SLATE_BORDER) -> PanelContainer:
 	var outer := PanelContainer.new()
 	var rim := StyleBoxFlat.new()
@@ -333,9 +358,37 @@ static func make_frame(child: Control, bg: Color = C_SLATE_BG, border: Color = C
 	outer.add_theme_stylebox_override("panel", rim)
 	var inner := PanelContainer.new()
 	inner.add_theme_stylebox_override("panel", make_panel_style(bg, border, 8))
+	var stitched := PanelContainer.new()
+	var stitch_style := make_stitch_style()
+	stitch_style.content_margin_left = 4.0
+	stitch_style.content_margin_right = 4.0
+	stitch_style.content_margin_top = 4.0
+	stitch_style.content_margin_bottom = 5.0
+	stitched.add_theme_stylebox_override("panel", stitch_style)
+	stitched.add_child(child)
+	inner.add_child(stitched)
 	outer.add_child(inner)
-	inner.add_child(child)
 	return outer
+
+## Stitch-dash border stylebox (transparent center, dashed thread edges).
+static func make_stitch_style(stitch_color: Color = Color("c8a65c")) -> StyleBoxTexture:
+	var img := Image.create(24, 24, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for x in range(3, 21, 6):
+		for dx in 3:
+			img.set_pixel(x + dx, 1, stitch_color)
+			img.set_pixel(x + dx, 22, stitch_color)
+	for y in range(3, 21, 6):
+		for dy in 3:
+			img.set_pixel(1, y + dy, stitch_color)
+			img.set_pixel(22, y + dy, stitch_color)
+	var sb := StyleBoxTexture.new()
+	sb.texture = ImageTexture.create_from_image(img)
+	sb.texture_margin_left = 5.0
+	sb.texture_margin_right = 5.0
+	sb.texture_margin_top = 5.0
+	sb.texture_margin_bottom = 5.0
+	return sb
 
 ## Soft radial light — used for breathing glows behind menu cards.
 static func make_radial_light(inner: Color, size := Vector2(420, 320)) -> TextureRect:
@@ -356,6 +409,66 @@ static func make_radial_light(inner: Color, size := Vector2(420, 320)) -> Textur
 	rect.stretch_mode = TextureRect.STRETCH_SCALE
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
+
+## Divider with a small diamond stud in the middle — line · diamond · line.
+## Callers can pulse the diamond (child index 1) for a shimmer effect.
+static func make_shimmer_divider(color: Color = C_PANEL_BORDER_LIGHT, height: float = 2.0) -> HBoxContainer:
+	var box := HBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 5)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var line_l := ColorRect.new()
+	line_l.color = Color(color, 0.55)
+	line_l.custom_minimum_size = Vector2(0, height)
+	line_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	line_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(line_l)
+	box.add_child(make_icon("diamond", 9.0))
+	var line_r := ColorRect.new()
+	line_r.color = Color(color, 0.55)
+	line_r.custom_minimum_size = Vector2(0, height)
+	line_r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	line_r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(line_r)
+	return box
+
+## Small gold knob texture for slider grabbers.
+static func make_knob_texture(bright: bool = false) -> ImageTexture:
+	var img := Image.create(10, 10, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for y in 10:
+		for x in 10:
+			var d := Vector2(x - 4.5, y - 4.5).length()
+			if d < 4.2:
+				img.set_pixel(x, y, Color("f0d488") if bright else Color("d9b964") if d < 3.0 else Color("8f7438"))
+	return ImageTexture.create_from_image(img)
+
+## Themed HSlider with the stone track + gold knob look.
+static func make_slider(min_value: float, max_value: float, value: float) -> HSlider:
+	var slider := HSlider.new()
+	slider.min_value = min_value
+	slider.max_value = max_value
+	slider.value = value
+	slider.custom_minimum_size = Vector2(120, 18)
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color("0d110b")
+	track.set_corner_radius_all(4)
+	track.content_margin_top = 5.0
+	track.content_margin_bottom = 5.0
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color("8f7438")
+	fill.set_corner_radius_all(4)
+	fill.content_margin_top = 5.0
+	fill.content_margin_bottom = 5.0
+	var area := StyleBoxFlat.new()
+	area.bg_color = Color(0, 0, 0, 0)
+	slider.add_theme_stylebox_override("slider", track)
+	slider.add_theme_stylebox_override("grabber_area", area)
+	slider.add_theme_stylebox_override("grabber_area_highlight", fill)
+	slider.add_theme_icon_override("grabber", make_knob_texture(false))
+	slider.add_theme_icon_override("grabber_highlight", make_knob_texture(true))
+	slider.add_theme_icon_override("grabber_disabled", make_knob_texture(false))
+	return slider
 
 # --- Buttons -----------------------------------------------------------------
 
@@ -379,7 +492,8 @@ const BUTTON_PALETTES := {
 }
 
 ## Styled button with hover grow animation and a gold focus ring.
-static func make_button(text: String, kind: String = "green", min_size := Vector2(150, 38), font_size := 15) -> Button:
+## `chevron` adds a "»" that slides in on hover/focus.
+static func make_button(text: String, kind: String = "green", min_size := Vector2(150, 38), font_size := 15, chevron: bool = false) -> Button:
 	var pal: Dictionary = BUTTON_PALETTES.get(kind, BUTTON_PALETTES["green"])
 	var button := Button.new()
 	button.text = text
@@ -414,7 +528,28 @@ static func make_button(text: String, kind: String = "green", min_size := Vector
 	button.focus_exited.connect(_shrink.bind(button))
 	button.button_down.connect(_squash.bind(button))
 	button.button_up.connect(_unsquash.bind(button))
+	if chevron:
+		var arrow := Label.new()
+		arrow.text = "»"
+		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		arrow.add_theme_font_size_override("font_size", font_size + 3)
+		arrow.add_theme_color_override("font_color", C_GOLD)
+		arrow.modulate.a = 0.35
+		arrow.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
+		arrow.position = Vector2(-14.0, -1.0)
+		button.add_child(arrow)
+		button.mouse_entered.connect(_chevron.bind(arrow, true))
+		button.mouse_exited.connect(_chevron.bind(arrow, false))
+		button.focus_entered.connect(_chevron.bind(arrow, true))
+		button.focus_exited.connect(_chevron.bind(arrow, false))
 	return button
+
+static func _chevron(arrow: Label, on: bool) -> void:
+	var tween := arrow.create_tween()
+	tween.set_parallel(true)
+	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(arrow, "modulate:a", 1.0 if on else 0.35, 0.15)
+	tween.tween_property(arrow, "position:x", -10.0 if on else -14.0, 0.15)
 
 static func _grow(button: Button) -> void:
 	_ui_sound_stub("hover")

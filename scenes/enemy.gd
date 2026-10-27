@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+const CombatText = preload("res://scripts/combat_text.gd")
+
 @export var speed: float = 50.0
 @export var health: int = 2
 
@@ -61,6 +63,7 @@ func take_damage(amount: int, knock_dir: Vector2) -> void:
 	if is_dead:
 		return
 	health -= amount
+	CombatText.spawn(get_parent(), global_position, str(amount), Color("ffe08a"), 12)
 	if health <= 0:
 		die(knock_dir)
 	else:
@@ -77,6 +80,7 @@ func knock_back(direction: Vector2, strength: float) -> void:
 func die(knock_dir: Vector2) -> void:
 	is_dead = true
 	remove_from_group("enemies")
+	GameState.kills += 1
 	# Remove ALL collision immediately so the dying slime can never block the player
 	collision_layer = 0
 	collision_mask = 0

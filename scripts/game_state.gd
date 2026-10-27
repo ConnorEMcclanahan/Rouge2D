@@ -13,6 +13,12 @@ var knockback_mult: float = 1.0
 var iframe_mult: float = 1.0
 var chest_used: bool = false
 
+# Run stats + settings
+var kills: int = 0
+var run_elapsed: float = 0.0
+var sfx_volume: float = 80.0
+var music_volume: float = 60.0
+
 # Consumed by the player's refresh_from_gamestate() after picking "hearty"
 var pending_heal: bool = false
 
@@ -27,6 +33,8 @@ func reset_run() -> void:
 	chest_opened = false
 	bones_defeated = false
 	pending_heal = false
+	kills = 0
+	run_elapsed = 0.0
 
 func apply_upgrade(id: String) -> void:
 	match id:

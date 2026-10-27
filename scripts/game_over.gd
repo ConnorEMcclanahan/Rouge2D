@@ -39,7 +39,12 @@ func _ready() -> void:
 	var subtitle := UiTheme.make_label("the woods claim another...", 12, Color("c99a92"))
 	content.add_child(subtitle)
 
-	content.add_child(UiTheme.make_divider(Color("8c443c")))
+	var divider := UiTheme.make_shimmer_divider(Color("a86a55"))
+	content.add_child(divider)
+	var diamond: Control = divider.get_child(1)
+	var diamond_tween := create_tween().set_loops()
+	diamond_tween.tween_property(diamond, "modulate:a", 1.0, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	diamond_tween.tween_property(diamond, "modulate:a", 0.35, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 	var hearts_row := HBoxContainer.new()
 	hearts_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -52,7 +57,7 @@ func _ready() -> void:
 	buttons_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons_row.add_theme_constant_override("separation", 12)
 
-	var retry_btn := UiTheme.make_button("Try Again", "green", Vector2(120, 36), 14)
+	var retry_btn := UiTheme.make_button("Try Again", "green", Vector2(120, 36), 14, true)
 	retry_btn.pressed.connect(_on_retry)
 	buttons_row.add_child(retry_btn)
 
@@ -96,7 +101,7 @@ func _layout() -> void:
 
 func _on_retry() -> void:
 	GameState.reset_run()
-	get_tree().change_scene_to_file("res://scenes/world.tscn")
+	Transition.fade_to("res://scenes/world.tscn")
 
 func _on_menu() -> void:
-	get_tree().change_scene_to_file("res://scenes/menu.tscn")
+	Transition.fade_to("res://scenes/menu.tscn")

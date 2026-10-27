@@ -6,14 +6,23 @@ const UiTheme = preload("res://scripts/ui_theme.gd")
 
 var bg: TextureRect
 var light: TextureRect
+var mist_a: TextureRect
+var mist_b: TextureRect
 var vignette: TextureRect
 var center: PanelContainer
 var content: VBoxContainer
-var title: Label
+var title_chars: Array[Label] = []
+var mist_drift_started := false
 
 func _ready() -> void:
 	bg = UiTheme.make_gradient_background(Color("1d2b1c"), Color("050a06"))
 	add_child(bg)
+
+	# Drifting mist layers behind everything
+	mist_a = UiTheme.make_radial_light(Color(0.45, 0.6, 0.4, 0.07), Vector2(640, 340))
+	mist_b = UiTheme.make_radial_light(Color(0.5, 0.44, 0.3, 0.07), Vector2(560, 300))
+	add_child(mist_a)
+	add_child(mist_b)
 
 	_add_fireflies()
 
@@ -28,10 +37,10 @@ func _ready() -> void:
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.add_theme_constant_override("separation", 8)
 
-	# Title row: slime mascot + game name
+	# Title row: slime mascot + per-character bobbing title
 	var title_row := HBoxContainer.new()
 	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_row.add_theme_constant_override("separation", 10)
+	title_row.add_theme_constant_override("separation", 4)
 
 	var mascot_holder := Control.new()
 	mascot_holder.custom_minimum_size = Vector2(44, 44)
@@ -45,15 +54,22 @@ func _ready() -> void:
 	mascot.stretch_mode = TextureRect.STRETCH_SCALE
 	mascot_holder.add_child(mascot)
 	title_row.add_child(mascot_holder)
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(6, 0)
+	title_row.add_child(spacer)
 
-	title = UiTheme.make_label("ROUGE", 34, UiTheme.C_GOLD)
-	title_row.add_child(title)
+	for i in "ROUGE".length():
+		var char_label := UiTheme.make_label("ROUGE"[i], 34, UiTheme.C_GOLD)
+		title_row.add_child(char_label)
+		title_chars.append(char_label)
 	content.add_child(title_row)
 
 	var subtitle := UiTheme.make_label("a tiny woods adventure", 12, UiTheme.C_MUTED)
 	content.add_child(subtitle)
 
-	content.add_child(UiTheme.make_divider(UiTheme.C_SLATE_BORDER))
+	var divider := UiTheme.make_shimmer_divider(UiTheme.C_PANEL_BORDER_LIGHT)
+	content.add_child(divider)
+	var diamond: Control = divider.get_child(1)
 
 	var hearts_row := HBoxContainer.new()
 	hearts_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -66,11 +82,11 @@ func _ready() -> void:
 	buttons_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons_row.add_theme_constant_override("separation", 12)
 
-	var play_btn := UiTheme.make_button("Play", "green", Vector2(110, 36), 15)
+	var play_btn := UiTheme.make_button("Play", "green", Vector2(120, 36), 15, true)
 	play_btn.pressed.connect(_on_play_pressed)
 	buttons_row.add_child(play_btn)
 
-	var quit_btn := UiTheme.make_button("Quit", "brown", Vector2(110, 36), 15)
+	var quit_btn := UiTheme.make_button("Quit", "brown", Vector2(120, 36), 15)
 	quit_btn.pressed.connect(func() -> void: get_tree().quit())
 	buttons_row.add_child(quit_btn)
 	content.add_child(buttons_row)
@@ -87,10 +103,13 @@ func _ready() -> void:
 
 	play_btn.grab_focus()
 
-	# Breathing title + mascot hop + slow light pulse + card fade-in
-	var title_tween := create_tween().set_loops()
-	title_tween.tween_property(title, "modulate:a", 0.82, 0.9).set_trans(Tween.TRANS_SINE)
-	title_tween.tween_property(title, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
+	# Animations: bobbing title letters, mascot hop, breathing light, drifting
+	# mists, pulsing diamond, and a fade-in for the card
+	for i in title_chars.size():
+		var t := create_tween().set_loops()
+		t.tween_interval(i * 0.18)
+		t.tween_property(title_chars[i], "position:y", -3.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		t.tween_property(title_chars[i], "position:y", 3.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 	var mascot_tween := create_tween().set_loops()
 	mascot_tween.tween_property(mascot, "position:y", 4.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
@@ -103,6 +122,10 @@ func _ready() -> void:
 	var light_scale := create_tween().set_loops()
 	light_scale.tween_property(light, "scale", Vector2(1.12, 1.12), 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	light_scale.tween_property(light, "scale", Vector2.ONE, 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	var diamond_tween := create_tween().set_loops()
+	diamond_tween.tween_property(diamond, "modulate:a", 1.0, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	diamond_tween.tween_property(diamond, "modulate:a", 0.35, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 	center.modulate.a = 0.0
 	center.position.y += 10.0
@@ -119,6 +142,17 @@ func _layout() -> void:
 	center.reset_size()
 	center.position = (vp_size - center.size) * 0.5
 	light.position = (vp_size - light.size) * 0.5 + Vector2(0, -10)
+	mist_a.position = Vector2(-80, vp_size.y * 0.55 - mist_a.size.y * 0.5)
+	mist_b.position = Vector2(vp_size.x - mist_b.size.x + 80, vp_size.y * 0.4 - mist_b.size.y * 0.5)
+
+	if not mist_drift_started:
+		mist_drift_started = true
+		var ta := mist_a.create_tween().set_loops()
+		ta.tween_property(mist_a, "position:x", mist_a.position.x + 120.0, 13.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		ta.tween_property(mist_a, "position:x", mist_a.position.x, 13.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		var tb := mist_b.create_tween().set_loops()
+		tb.tween_property(mist_b, "position:x", mist_b.position.x - 110.0, 15.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tb.tween_property(mist_b, "position:x", mist_b.position.x, 15.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 ## Fireflies: glowing dots drifting upward with a side-to-side sway.
 func _add_fireflies() -> void:
@@ -148,4 +182,4 @@ func _drift_firefly(fly: ColorRect) -> void:
 
 func _on_play_pressed() -> void:
 	GameState.reset_run()
-	get_tree().change_scene_to_file("res://scenes/world.tscn")
+	Transition.fade_to("res://scenes/world.tscn")

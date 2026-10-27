@@ -9,6 +9,11 @@ var full_texture: ImageTexture
 var empty_texture: ImageTexture
 var pending_health: int = 3
 var plate: PanelContainer
+var stats_plate: PanelContainer
+var time_label: Label
+var kills_label: Label
+var low_pulse_tween: Tween
+var is_low_pulsing := false
 
 func _ready() -> void:
 	layer = 10
@@ -46,6 +51,9 @@ func _ready() -> void:
 
 	await get_tree().process_frame
 	plate.reset_size()
+	_build_stats()
+	_update_stats_pos()
+	get_viewport().size_changed.connect(_update_stats_pos)
 	set_health(pending_health)
 
 func _append_heart(container: HBoxContainer) -> void:
@@ -76,6 +84,70 @@ func set_health(current: int) -> void:
 		hearts[i].texture = full_texture if i < current else empty_texture
 	if gained:
 		_pop_heart(current - 1)
+	if current <= 1 and not is_low_pulsing:
+		_start_low_pulse()
+	elif current > 1 and is_low_pulsing:
+		_stop_low_pulse()
+
+## Top-right run tracker: elapsed time + kill count.
+func _build_stats() -> void:
+	stats_plate = PanelContainer.new()
+	stats_plate.name = "StatsPlate"
+	var style := UiTheme.make_panel_style(Color("241d14"), UiTheme.C_SLATE_BORDER, 5)
+	style.shadow_size = 2
+	style.shadow_offset = Vector2(0, 2)
+	style.content_margin_left = 8.0
+	style.content_margin_right = 8.0
+	style.content_margin_top = 4.0
+	style.content_margin_bottom = 5.0
+	stats_plate.add_theme_stylebox_override("panel", style)
+	stats_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(stats_plate)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_plate.add_child(row)
+
+	row.add_child(UiTheme.make_icon("clock", 12))
+	time_label = UiTheme.make_label("0:00", 10, UiTheme.C_TEXT, HORIZONTAL_ALIGNMENT_LEFT)
+	row.add_child(time_label)
+
+	var sep := ColorRect.new()
+	sep.color = Color(UiTheme.C_SLATE_BORDER, 0.5)
+	sep.custom_minimum_size = Vector2(1, 10)
+	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(sep)
+
+	row.add_child(UiTheme.make_icon("skull", 12))
+	kills_label = UiTheme.make_label("0", 10, UiTheme.C_TEXT, HORIZONTAL_ALIGNMENT_LEFT)
+	row.add_child(kills_label)
+
+func _update_stats_pos() -> void:
+	var vp_size := get_viewport().get_visible_rect().size
+	stats_plate.reset_size()
+	stats_plate.position = Vector2(vp_size.x - stats_plate.size.x - 6.0, 6.0)
+
+func _process(delta: float) -> void:
+	GameState.run_elapsed += delta
+	var total := int(GameState.run_elapsed)
+	time_label.text = "%d:%02d" % [total / 60, total % 60]
+	kills_label.text = str(GameState.kills)
+
+## Low-health warning: hearts pulse red until healed above 1.
+func _start_low_pulse() -> void:
+	is_low_pulsing = true
+	var container := get_node("Plate/Hearts") as Control
+	container.modulate = Color.WHITE
+	low_pulse_tween = container.create_tween().set_loops()
+	low_pulse_tween.tween_property(container, "modulate", Color(1.0, 0.45, 0.45), 0.45).set_trans(Tween.TRANS_SINE)
+	low_pulse_tween.tween_property(container, "modulate", Color.WHITE, 0.45).set_trans(Tween.TRANS_SINE)
+
+func _stop_low_pulse() -> void:
+	is_low_pulsing = false
+	if low_pulse_tween and low_pulse_tween.is_valid():
+		low_pulse_tween.kill()
+	get_node("Plate/Hearts").modulate = Color.WHITE
 
 ## Damage feedback: hearts flash red while the plate shakes horizontally.
 func shake() -> void:

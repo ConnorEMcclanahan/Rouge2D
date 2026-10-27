@@ -3,6 +3,7 @@ extends CharacterBody2D
 ## 4 hearts, chases the player, lunges up close. Everything is hearts, no bars.
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
+const CombatText = preload("res://scripts/combat_text.gd")
 
 @export var speed: float = 35.0
 @export var health: int = MAX_HEALTH
@@ -25,6 +26,11 @@ var attack_direction: Vector2 = Vector2.ZERO
 var full_heart_tex: ImageTexture
 var empty_heart_tex: ImageTexture
 var hearts: Array[TextureRect] = []
+
+var nameplate: Control
+var name_label: Label
+var bar_segments: Array[ColorRect] = []
+var engaged := false
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var detection_area: Area2D = $detection_area
@@ -131,6 +137,8 @@ func take_damage(amount: int, knock_dir: Vector2) -> void:
 		return
 	health -= amount
 	_update_hearts()
+	_update_bar()
+	CombatText.spawn(get_parent(), global_position, str(amount), Color("ffe08a"), 14)
 	if health <= 0:
 		die(knock_dir)
 	else:
@@ -149,6 +157,9 @@ func die(knock_dir: Vector2) -> void:
 	is_dead = true
 	remove_from_group("enemies")
 	GameState.bones_defeated = true
+	GameState.kills += 1
+	if nameplate:
+		nameplate.visible = false
 	# Remove ALL collision immediately so the dying bones can never block the player
 	collision_layer = 0
 	collision_mask = 0
@@ -174,6 +185,59 @@ func _on_detection_area_body_entered(body: Node2D) -> void:
 		return
 	player = body
 	player_chase = true
+	_engage_nameplate()
+
+## Boss nameplate: typewriter name + segmented health bar, pops in on engage.
+func _engage_nameplate() -> void:
+	if engaged:
+		return
+	engaged = true
+	nameplate = Control.new()
+	nameplate.position = Vector2(-30, -64)
+	nameplate.custom_minimum_size = Vector2(60, 24)
+	add_child(nameplate)
+
+	name_label = Label.new()
+	name_label.custom_minimum_size = Vector2(60, 14)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_color_override("font_color", Color("ecc96f"))
+	name_label.add_theme_color_override("font_outline_color", Color(0.08, 0.05, 0.02, 0.95))
+	name_label.add_theme_constant_override("outline_size", 3)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	nameplate.add_child(name_label)
+
+	var bar := HBoxContainer.new()
+	bar.position = Vector2(9, 15)
+	bar.add_theme_constant_override("separation", 2)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	nameplate.add_child(bar)
+	for i in MAX_HEALTH:
+		var seg := ColorRect.new()
+		seg.color = Color("c23b2e")
+		seg.custom_minimum_size = Vector2(9, 6)
+		seg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.add_child(seg)
+		bar_segments.append(seg)
+
+	nameplate.scale = Vector2(0.6, 0.6)
+	nameplate.modulate.a = 0.0
+	var pop := nameplate.create_tween()
+	pop.set_parallel(true)
+	pop.tween_property(nameplate, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pop.tween_property(nameplate, "modulate:a", 1.0, 0.2)
+
+	for i in "BONES".length():
+		var t := create_tween()
+		t.tween_interval(0.06 * i)
+		t.tween_callback(_set_name_char.bind(i + 1))
+
+func _set_name_char(count: int) -> void:
+	name_label.text = "BONES".substr(0, count)
+
+func _update_bar() -> void:
+	for i in bar_segments.size():
+		bar_segments[i].color = Color("c23b2e") if i < health else Color("3a1210")
 
 func _on_detection_area_body_exited(body: Node2D) -> void:
 	if body == player:
