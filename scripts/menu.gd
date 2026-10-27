@@ -1,131 +1,209 @@
 extends Control
-# main menu. laid out manually against the viewport (anchors are flaky as
-# scene roots, don't trust em)
+# main menu. the background is a live slice of the game world (grass, trees,
+# a wandering slime) with a slow camera pan, and the ui sits on top of it.
 
 const UiTheme = preload("res://scripts/ui_theme.gd")
 
-var bg: TextureRect
-var light: TextureRect
-var mist_a: TextureRect
-var mist_b: TextureRect
+var bg_layer: CanvasLayer
+var bg: Node2D
+var mascot: AnimatedSprite2D
+var dim: ColorRect
 var vignette: TextureRect
+var title_row: HBoxContainer
+var subtitle: Label
 var center: PanelContainer
-var content: VBoxContainer
+var version_label: Label
 var title_chars: Array[Label] = []
-var mist_drift_started := false
 
 func _ready() -> void:
-	bg = UiTheme.make_gradient_background(Color("1d2b1c"), Color("050a06"))
-	add_child(bg)
+	_build_background()
 
-	# Drifting mist layers behind everything
-	mist_a = UiTheme.make_radial_light(Color(0.45, 0.6, 0.4, 0.07), Vector2(640, 340))
-	mist_b = UiTheme.make_radial_light(Color(0.5, 0.44, 0.3, 0.07), Vector2(560, 300))
-	add_child(mist_a)
-	add_child(mist_b)
-
-	_add_fireflies()
-
-	# Breathing radial glow behind the card
-	light = UiTheme.make_radial_light(Color(0.55, 0.48, 0.28, 0.16), Vector2(460, 360))
-	add_child(light)
+	dim = ColorRect.new()
+	dim.color = Color(0.02, 0.04, 0.02, 0.42)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(dim)
 
 	vignette = UiTheme.make_vignette(0.55)
 	add_child(vignette)
 
-	content = VBoxContainer.new()
-	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_theme_constant_override("separation", 8)
-
-	# Title row: slime mascot + per-character bobbing title
-	var title_row := HBoxContainer.new()
-	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_row.add_theme_constant_override("separation", 4)
-
-	var mascot_holder := Control.new()
-	mascot_holder.custom_minimum_size = Vector2(44, 44)
-	var mascot := TextureRect.new()
-	var atlas := AtlasTexture.new()
-	atlas.atlas = load("res://art/mystic_woods_free_2.2/sprites/characters/slime.png")
-	atlas.region = Rect2(0, 0, 32, 32)
-	mascot.texture = atlas
-	mascot.custom_minimum_size = Vector2(44, 44)
-	mascot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	mascot.stretch_mode = TextureRect.STRETCH_SCALE
-	mascot_holder.add_child(mascot)
-	title_row.add_child(mascot_holder)
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(6, 0)
-	title_row.add_child(spacer)
-
-	for i in "ROUGE".length():
-		var char_label := UiTheme.make_label("ROUGE"[i], 34, UiTheme.C_GOLD)
-		title_row.add_child(char_label)
-		title_chars.append(char_label)
-	content.add_child(title_row)
-
-	var subtitle := UiTheme.make_label("a tiny woods adventure", 12, UiTheme.C_MUTED)
-	content.add_child(subtitle)
-
-	var divider := UiTheme.make_shimmer_divider(UiTheme.C_PANEL_BORDER_LIGHT)
-	content.add_child(divider)
-	var diamond: Control = divider.get_child(1)
-
-	var hearts_row := HBoxContainer.new()
-	hearts_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	hearts_row.add_theme_constant_override("separation", 4)
-	for i in 3:
-		hearts_row.add_child(UiTheme.make_full_heart_icon())
-	content.add_child(hearts_row)
-
-	var buttons_row := HBoxContainer.new()
-	buttons_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons_row.add_theme_constant_override("separation", 12)
-
-	var play_btn := UiTheme.make_button("Play", "green", Vector2(120, 36), 15, true)
-	play_btn.pressed.connect(_on_play_pressed)
-	buttons_row.add_child(play_btn)
-
-	var quit_btn := UiTheme.make_button("Quit", "brown", Vector2(120, 36), 15)
-	quit_btn.pressed.connect(func() -> void: get_tree().quit())
-	buttons_row.add_child(quit_btn)
-	content.add_child(buttons_row)
-
-	var hint := UiTheme.make_label("WASD move  ·  SPACE attack", 10, UiTheme.C_MUTED)
-	content.add_child(hint)
-
-	center = UiTheme.make_frame(content)
-	add_child(center)
+	_add_fireflies()
+	_build_ui()
 
 	await get_tree().process_frame
 	_layout()
 	get_viewport().size_changed.connect(_layout)
+	_animations()
 
+# ---- the pixel art world behind everything --------------------------------
+
+func _build_background() -> void:
+	bg_layer = CanvasLayer.new()
+	bg_layer.layer = -1
+	add_child(bg_layer)
+
+	bg = Node2D.new()
+	bg.scale = Vector2(4, 4)
+	bg.y_sort_enabled = true
+	bg_layer.add_child(bg)
+
+	# grass field
+	var ts := TileSet.new()
+	ts.tile_size = Vector2i(16, 16)
+	var src := TileSetAtlasSource.new()
+	src.texture = load("res://art/mystic_woods_free_2.2/sprites/tilesets/plains.png")
+	src.texture_region_size = Vector2i(16, 16)
+	var grass: Array[Vector2i] = []
+	# speckled grass rows (0-2 full, row 3 has 4 tiles)
+	for y in range(3):
+		for x in range(6):
+			grass.append(Vector2i(x, y))
+	for x in range(4):
+		grass.append(Vector2i(x, 3))
+	# the lush green rows, double-weighted so the field stays green
+	for y in range(4, 6):
+		for x in range(6):
+			grass.append(Vector2i(x, y))
+			grass.append(Vector2i(x, y))
+	var seen := {}
+	for c in grass:
+		if seen.has(c):
+			continue
+		seen[c] = true
+		src.create_tile(c)
+	ts.add_source(src, 0)
+	var ground := TileMapLayer.new()
+	ground.tile_set = ts
+	bg.add_child(ground)
+	for gy in range(-16, 24):
+		for gx in range(-36, 36):
+			ground.set_cell(Vector2i(gx, gy), 0, grass[(gx * 7 + gy * 13) % grass.size()])
+
+	# scattered trees, keeping a clearing around the mascot
+	var ts2 := TileSet.new()
+	ts2.tile_size = Vector2i(16, 16)
+	var tsrc := TileSetAtlasSource.new()
+	tsrc.texture = load("res://art/mystic_woods_free_2.2/sprites/objects/objects.png")
+	tsrc.texture_region_size = Vector2i(16, 16)
+	var spots: Array[Vector2i] = [Vector2i(0, 0), Vector2i(0, 1), Vector2i(5, 0), Vector2i(10, 0), Vector2i(11, 0), Vector2i(11, 2), Vector2i(6, 7), Vector2i(10, 7)]
+	for s in spots:
+		tsrc.create_tile(s)
+	tsrc.create_tile(Vector2i(0, 5), Vector2i(3, 4))  # big tree
+	tsrc.create_tile(Vector2i(8, 6), Vector2i(2, 3))  # medium
+	ts2.add_source(tsrc, 0)
+	var trees := TileMapLayer.new()
+	trees.tile_set = ts2
+	trees.y_sort_enabled = true
+	bg.add_child(trees)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1337
+	for i in 30:
+		var tx := rng.randi_range(-30, 30)
+		var ty := rng.randi_range(-10, 18)
+		if abs(tx) < 6 and ty > 0 and ty < 12:
+			continue
+		var kind := rng.randi_range(0, 8)
+		match kind:
+			7:
+				trees.set_cell(Vector2i(tx, ty), 0, Vector2i(8, 6))
+			8:
+				trees.set_cell(Vector2i(tx, ty), 0, Vector2i(0, 5))
+			_:
+				trees.set_cell(Vector2i(tx, ty), 0, spots[kind])
+
+	# slow pan across the field (moves the bg node itself so the ui stays put)
+	bg.position = Vector2(-70, -34)
+	var pan := create_tween().set_loops()
+	pan.tween_property(bg, "position", Vector2(70, 6), 20.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	pan.tween_property(bg, "position", Vector2(-70, -34), 20.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	# the slime, chilling in the clearing
+	mascot = AnimatedSprite2D.new()
+	var frames := SpriteFrames.new()
+	frames.add_animation("idle")
+	var slime_sheet: Texture2D = load("res://art/mystic_woods_free_2.2/sprites/characters/slime.png")
+	for i in 4:
+		var at := AtlasTexture.new()
+		at.atlas = slime_sheet
+		at.region = Rect2(i * 32, 0, 32, 32)
+		frames.add_frame("idle", at)
+	frames.set_animation_speed("idle", 3.0)
+	mascot.sprite_frames = frames
+	mascot.position = Vector2(0, 6)
+	mascot.play("idle")
+	bg.add_child(mascot)
+	_hop_loop()
+
+# slime hops every couple seconds
+func _hop_loop() -> void:
+	await get_tree().create_timer(2.2).timeout
+	if not is_instance_valid(mascot):
+		return
+	var t := create_tween()
+	t.tween_property(mascot, "position:y", mascot.position.y - 14.0, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(mascot, "position:y", mascot.position.y, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_callback(_hop_loop)
+
+# ---- the actual menu ui ----------------------------------------------------
+
+func _build_ui() -> void:
+	# title, one node per letter so they can bob
+	title_row = HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 4)
+	for i in "ROUGE".length():
+		var char_label := UiTheme.make_label("ROUGE"[i], 42, UiTheme.C_GOLD)
+		title_row.add_child(char_label)
+		title_chars.append(char_label)
+	add_child(title_row)
+
+	subtitle = UiTheme.make_label("a tiny woods adventure", 13, UiTheme.C_MUTED)
+	add_child(subtitle)
+
+	# the card with hearts + buttons
+	var content := VBoxContainer.new()
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 8)
+
+	var hearts_row := HBoxContainer.new()
+	hearts_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	hearts_row.add_theme_constant_override("separation", 5)
+	for i in 3:
+		hearts_row.add_child(UiTheme.make_full_heart_icon(Vector2(24, 20)))
+	content.add_child(hearts_row)
+
+	content.add_child(UiTheme.make_shimmer_divider(UiTheme.C_PANEL_BORDER_LIGHT))
+
+	var play_btn := UiTheme.make_button("Play", "green", Vector2(230, 46), 16, true)
+	play_btn.pressed.connect(_on_play_pressed)
+	content.add_child(play_btn)
+
+	var quit_btn := UiTheme.make_button("Quit", "brown", Vector2(230, 40), 15)
+	quit_btn.pressed.connect(func() -> void: get_tree().quit())
+	content.add_child(quit_btn)
+
+	var hint := UiTheme.make_label("WASD move  ·  SPACE attack  ·  ESC pause", 10, UiTheme.C_MUTED)
+	content.add_child(hint)
+
+	center = UiTheme.make_frame(content)
+	add_child(center)
 	play_btn.grab_focus()
 
-	# Animations: bobbing title, mascot hop, breathing light, mist drift
+	version_label = UiTheme.make_label("v0.2", 9, Color("6f6b58"), HORIZONTAL_ALIGNMENT_RIGHT)
+	add_child(version_label)
+
+func _animations() -> void:
+	# per-letter bob
 	for i in title_chars.size():
 		var t := create_tween().set_loops()
 		t.tween_interval(i * 0.18)
 		t.tween_property(title_chars[i], "position:y", -3.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		t.tween_property(title_chars[i], "position:y", 3.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
-	var mascot_tween := create_tween().set_loops()
-	mascot_tween.tween_property(mascot, "position:y", 4.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	mascot_tween.tween_property(mascot, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	# title breathes a little
+	var breathe := create_tween().set_loops()
+	breathe.tween_property(title_row, "modulate:a", 0.85, 0.9).set_trans(Tween.TRANS_SINE)
+	breathe.tween_property(title_row, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
 
-	var light_tween := create_tween().set_loops()
-	light_tween.tween_property(light, "modulate:a", 1.0, 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	light_tween.tween_property(light, "modulate:a", 0.55, 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-	var light_scale := create_tween().set_loops()
-	light_scale.tween_property(light, "scale", Vector2(1.12, 1.12), 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	light_scale.tween_property(light, "scale", Vector2.ONE, 2.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-	var diamond_tween := create_tween().set_loops()
-	diamond_tween.tween_property(diamond, "modulate:a", 1.0, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	diamond_tween.tween_property(diamond, "modulate:a", 0.35, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
+	# card fades in
 	center.modulate.a = 0.0
 	center.position.y += 10.0
 	var intro := create_tween().set_parallel(true)
@@ -134,30 +212,24 @@ func _ready() -> void:
 
 func _layout() -> void:
 	var vp_size: Vector2 = get_viewport().get_visible_rect().size
-	bg.size = vp_size
-	bg.position = Vector2.ZERO
+	dim.size = vp_size
+	dim.position = Vector2.ZERO
 	vignette.size = vp_size
 	vignette.position = Vector2.ZERO
+	title_row.reset_size()
+	title_row.position = Vector2((vp_size.x - title_row.size.x) * 0.5, 40)
+	subtitle.reset_size()
+	subtitle.position = Vector2((vp_size.x - subtitle.size.x) * 0.5, 102)
 	center.reset_size()
-	center.position = (vp_size - center.size) * 0.5
-	light.position = (vp_size - light.size) * 0.5 + Vector2(0, -10)
-	mist_a.position = Vector2(-80, vp_size.y * 0.55 - mist_a.size.y * 0.5)
-	mist_b.position = Vector2(vp_size.x - mist_b.size.x + 80, vp_size.y * 0.4 - mist_b.size.y * 0.5)
-
-	if not mist_drift_started:
-		mist_drift_started = true
-		var ta := mist_a.create_tween().set_loops()
-		ta.tween_property(mist_a, "position:x", mist_a.position.x + 120.0, 13.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		ta.tween_property(mist_a, "position:x", mist_a.position.x, 13.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		var tb := mist_b.create_tween().set_loops()
-		tb.tween_property(mist_b, "position:x", mist_b.position.x - 110.0, 15.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		tb.tween_property(mist_b, "position:x", mist_b.position.x, 15.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	center.position = Vector2((vp_size.x - center.size.x) * 0.5, 158)
+	version_label.reset_size()
+	version_label.position = Vector2(vp_size.x - version_label.size.x - 10.0, vp_size.y - version_label.size.y - 8.0)
 
 # fireflies drifting up with a little sway
 func _add_fireflies() -> void:
-	for i in 14:
+	for i in 16:
 		var fly := ColorRect.new()
-		fly.color = Color(1.0, 0.85, 0.4, randf_range(0.25, 0.6))
+		fly.color = Color(1.0, 0.85, 0.4, randf_range(0.3, 0.7))
 		fly.size = Vector2(3, 3)
 		fly.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		fly.position = Vector2(randf() * 288.0, randf() * 162.0)
@@ -176,7 +248,7 @@ func _drift_firefly(fly: ColorRect) -> void:
 	tween.tween_property(fly, "modulate:a", 0.0, dur * 0.85).set_trans(Tween.TRANS_LINEAR)
 	tween.chain().tween_callback(func() -> void:
 		fly.position = Vector2(base_x, base_y)
-		fly.modulate.a = randf_range(0.25, 0.6)
+		fly.modulate.a = randf_range(0.3, 0.7)
 		_drift_firefly(fly))
 
 func _on_play_pressed() -> void:
