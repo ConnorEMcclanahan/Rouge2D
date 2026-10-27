@@ -12,7 +12,6 @@ var mascot: AnimatedSprite2D
 var dim: ColorRect
 var vignette: TextureRect
 var title_row: HBoxContainer
-var subtitle: Label
 var center: PanelContainer
 var version_label: Label
 var title_chars: Array[Label] = []
@@ -152,9 +151,6 @@ func _build_ui() -> void:
 		title_chars.append(char_label)
 	add_child(title_row)
 
-	subtitle = UiTheme.make_label("a tiny woods adventure", 11, UiTheme.C_MUTED)
-	add_child(subtitle)
-
 	# the card with the buttons
 	var content := VBoxContainer.new()
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -205,8 +201,6 @@ func _layout() -> void:
 	vignette.position = Vector2.ZERO
 	title_row.reset_size()
 	title_row.position = Vector2((vp_size.x - title_row.size.x) * 0.5, 10)
-	subtitle.reset_size()
-	subtitle.position = Vector2((vp_size.x - subtitle.size.x) * 0.5, 50)
 	center.reset_size()
 	center.position = Vector2((vp_size.x - center.size.x) * 0.5, 62)
 	version_label.reset_size()
