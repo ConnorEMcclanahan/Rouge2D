@@ -84,11 +84,9 @@ func _build_background() -> void:
 	var tsrc := TileSetAtlasSource.new()
 	tsrc.texture = load("res://art/mystic_woods_free_2.2/sprites/objects/objects.png")
 	tsrc.texture_region_size = Vector2i(16, 16)
-	var spots: Array[Vector2i] = [Vector2i(0, 0), Vector2i(0, 1), Vector2i(5, 0), Vector2i(10, 0), Vector2i(11, 0), Vector2i(11, 2), Vector2i(6, 7), Vector2i(10, 7)]
+	var spots: Array[Vector2i] = [Vector2i(0, 0), Vector2i(0, 1), Vector2i(5, 0), Vector2i(10, 0), Vector2i(11, 0)]
 	for s in spots:
 		tsrc.create_tile(s)
-	tsrc.create_tile(Vector2i(0, 5), Vector2i(3, 4))  # big tree
-	tsrc.create_tile(Vector2i(8, 6), Vector2i(2, 3))  # medium
 	ts2.add_source(tsrc, 0)
 	var trees := TileMapLayer.new()
 	trees.tile_set = ts2
@@ -96,19 +94,12 @@ func _build_background() -> void:
 	bg.add_child(trees)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1337
-	for i in 30:
-		var tx := rng.randi_range(-30, 30)
-		var ty := rng.randi_range(-10, 18)
-		if abs(tx) < 6 and ty > 0 and ty < 12:
+	for i in 12:
+		var tx := rng.randi_range(-28, 28)
+		var ty := rng.randi_range(-8, 16)
+		if abs(tx) < 8 and ty > 0 and ty < 12:
 			continue
-		var kind := rng.randi_range(0, 8)
-		match kind:
-			7:
-				trees.set_cell(Vector2i(tx, ty), 0, Vector2i(8, 6))
-			8:
-				trees.set_cell(Vector2i(tx, ty), 0, Vector2i(0, 5))
-			_:
-				trees.set_cell(Vector2i(tx, ty), 0, spots[kind])
+		trees.set_cell(Vector2i(tx, ty), 0, spots[rng.randi_range(0, spots.size() - 1)])
 
 	# slow pan across the field (moves the bg node itself so the ui stays put)
 	bg.position = Vector2(-70, -34)
@@ -163,15 +154,6 @@ func _build_ui() -> void:
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.add_theme_constant_override("separation", 8)
 
-	var hearts_row := HBoxContainer.new()
-	hearts_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	hearts_row.add_theme_constant_override("separation", 5)
-	for i in 3:
-		hearts_row.add_child(UiTheme.make_full_heart_icon(Vector2(24, 20)))
-	content.add_child(hearts_row)
-
-	content.add_child(UiTheme.make_shimmer_divider(UiTheme.C_PANEL_BORDER_LIGHT))
-
 	var play_btn := UiTheme.make_button("Play", "green", Vector2(230, 46), 16, true)
 	play_btn.pressed.connect(_on_play_pressed)
 	content.add_child(play_btn)
@@ -179,6 +161,8 @@ func _build_ui() -> void:
 	var quit_btn := UiTheme.make_button("Quit", "brown", Vector2(230, 40), 15)
 	quit_btn.pressed.connect(func() -> void: get_tree().quit())
 	content.add_child(quit_btn)
+
+	content.add_child(UiTheme.make_shimmer_divider(UiTheme.C_PANEL_BORDER_LIGHT))
 
 	var hint := UiTheme.make_label("WASD move  ·  SPACE attack  ·  ESC pause", 10, UiTheme.C_MUTED)
 	content.add_child(hint)
